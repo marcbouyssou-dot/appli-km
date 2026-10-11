@@ -30,6 +30,46 @@ class MesKmApp extends StatelessWidget {
   }
 }
 
+/// Application minimale affichée quand le stockage local n'a pas pu être
+/// ouvert : ne jamais montrer « 0 km » comme si c'était une donnée réelle.
+class StorageErrorApp extends StatelessWidget {
+  const StorageErrorApp({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Mes Km',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      home: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Impossible d’ouvrir le stockage local de Mes Km.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(message, textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Coquille principale : les 4 destinations de Mes Km.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});

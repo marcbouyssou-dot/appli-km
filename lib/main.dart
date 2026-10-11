@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
+import 'app/providers.dart';
+import 'data/local/open_database.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('fr_FR');
-  runApp(const MesKmApp());
+
+  try {
+    final database = await openMesKmDatabase();
+    runApp(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(database)],
+        child: const MesKmApp(),
+      ),
+    );
+  } catch (error) {
+    runApp(StorageErrorApp(message: '$error'));
+  }
 }

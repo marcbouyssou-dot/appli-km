@@ -1,0 +1,199 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mes_km/app/providers.dart';
+import 'package:mes_km/data/local/app_database.dart';
+import 'package:mes_km/data/local/sembast_day_extra_repository.dart';
+import 'package:mes_km/data/local/sembast_trip_repository.dart';
+import 'package:mes_km/domain/logic/day_total.dart';
+import 'package:mes_km/domain/models/civil_date.dart';
+import 'package:mes_km/domain/models/day_extra.dart';
+import 'package:mes_km/domain/models/trip.dart';
+import 'package:mes_km/features/today/today_controller.dart';
+import 'package:sembast/sembast_memory.dart';
+
+void main() {
+  final day = CivilDate(2026, 10, 11);
+  late DatabaseFactory factory;
+  late MesKmDatabase database;
+  late ProviderContainer container;
+
+  Future<ProviderContainer> makeContainer() async {
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(database),
+      todayDateProvider.overrideWithValue(() => day),
+    ]);
+    addTearDown(c.dispose);
+    return c;
+  }
+
+  setUp(() async {
+    factory = newDatabaseFactoryMemory();
+    database = await MesKmDatabase.open(factory, name: 'today.db');
+    container = await makeContainer();
+  });
+
+  tearDown(() => database.close());
+
+  TodayController controller() =>
+      container.read(todayControllerProvider.notifier);
+
+  Future<TodayState> state() =>
+      container.read(todayControllerProvider.future);
+
+  Future<void> seedTrips2418() async {
+    await controller().addTrip(distanceKm: 24, isRoundTrip: false);
+    await controller().addTrip(distanceKm: 18, isRoundTrip: false);
+  }
+
+  test('journée vide => total 0', () async {
+    final s = await state();
+    expect(s.totalKm, 0);
+    expect(s.isEmpty, isTrue);
+  });
+
+  test('total direct 87 => DayExtra 87 persisté', () async {
+    final result = await controller().declareTotal(87);
+    expect(result, isA<DailyTotalAdjusted>());
+
+    expect((await state()).totalKm, 87);
+    final stored =
+        await SembastDayExtraRepository(database.db).getForDate(day);
+    expect(stored?.extraKm, 87);
+  });
+
+  test('24 + 18 puis total 87 => extra 45, trips intacts', () async {
+    await seedTrips2418();
+    await controller().declareTotal(87);
+
+    final s = await state();
+    expect(s.detailedKm, 42);
+    expect(s.extraKm, 45);
+    expect(s.totalKm, 87);
+    expect(s.trips.map((t) => t.distanceKm).toList()..sort(), [18, 24]);
+  });
+
+  test('24 + 18 puis total 42 => extra supprimé (absence logique)', () async {
+    await seedTrips2418();
+    await controller().declareTotal(87);
+    await controller().declareTotal(42);
+
+    final s = await state();
+    expect(s.extra, isNull);
+    expect(s.totalKm, 42);
+    expect(
+      await SembastDayExtraRepository(database.db).getForDate(day),
+      isNull,
+    );
+  });
+
+  test('24 + 18 puis total 40 => refus, stockage inchangé', () async {
+    await seedTrips2418();
+    await controller().declareTotal(87);
+
+    final result = await controller().declareTotal(40);
+
+    result as DailyTotalBelowDetailed;
+    expect(result.detailedKm, 42);
+    expect(result.requestedKm, 40);
+
+    final s = await state();
+    expect(s.totalKm, 87);
+    expect(s.extraKm, 45);
+    expect(
+      (await SembastDayExtraRepository(database.db).getForDate(day))?.extraKm,
+      45,
+    );
+  });
+
+  test('ajout de trajet persisté avec métadonnées', () async {
+    await controller().addTrip(
+      distanceKm: 48,
+      isRoundTrip: true,
+      origin: 'Maison',
+      destination: 'Client',
+      purpose: 'RDV',
+    );
+
+    final stored = await SembastTripRepository(database.db).getByDate(day);
+    expect(stored.single.distanceKm, 48);
+    expect(stored.single.isRoundTrip, isTrue);
+    expect(stored.single.origin, 'Maison');
+    expect(stored.single.destination, 'Client');
+    expect(stored.single.purpose, 'RDV');
+    expect(stored.single.date, day);
+  });
+
+  test('modification de trajet : même id, createdAt préservé', () async {
+    await controller().addTrip(distanceKm: 24, isRoundTrip: false);
+    final original = (await state()).trips.single;
+
+    await controller().updateTrip(
+      original,
+      distanceKm: 30,
+      isRoundTrip: true,
+      origin: 'Dépôt',
+    );
+
+    final stored =
+        await SembastTripRepository(database.db).getById(original.id);
+    expect(stored?.distanceKm, 30);
+    expect(stored?.isRoundTrip, isTrue);
+    expect(stored?.origin, 'Dépôt');
+    expect(stored?.createdAt, original.createdAt);
+    expect(await SembastTripRepository(database.db).getAll(), hasLength(1));
+  });
+
+  test('suppression de trajet persistée', () async {
+    await seedTrips2418();
+    final trips = (await state()).trips;
+
+    await controller().deleteTrip(trips.first.id);
+
+    expect((await state()).trips, hasLength(1));
+    expect(await SembastTripRepository(database.db).getAll(), hasLength(1));
+  });
+
+  test('supprimer un trajet ne modifie pas le DayExtra', () async {
+    await seedTrips2418();
+    await controller().declareTotal(87); // extra 45
+
+    final tripOf18 =
+        (await state()).trips.firstWhere((t) => t.distanceKm == 18);
+    await controller().deleteTrip(tripOf18.id);
+
+    final s = await state();
+    expect(s.extraKm, 45, reason: 'l’extra reste 45');
+    expect(s.totalKm, 69, reason: 'le total dérivé diminue honnêtement');
+  });
+
+  test('réouverture de la base : les données du jour réapparaissent',
+      () async {
+    await seedTrips2418();
+    await controller().declareTotal(87);
+    await database.close();
+
+    // Réouverture (la factory mémoire conserve le « fichier »).
+    database = await MesKmDatabase.open(factory, name: 'today.db');
+    container = await makeContainer();
+
+    final s = await state();
+    expect(s.detailedKm, 42);
+    expect(s.extraKm, 45);
+    expect(s.totalKm, 87);
+  });
+
+  test('les trips d’autres jours ne polluent pas aujourd’hui',
+      () async {
+    await SembastTripRepository(database.db).put(Trip(
+      id: 'autre-jour',
+      date: CivilDate(2026, 10, 10),
+      distanceKm: 99,
+      createdAt: DateTime.utc(2026, 10, 10),
+    ));
+    await SembastDayExtraRepository(database.db)
+        .set(DayExtra(date: CivilDate(2026, 10, 10), extraKm: 11));
+
+    final s = await state();
+    expect(s.totalKm, 0);
+  });
+}

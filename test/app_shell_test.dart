@@ -1,16 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-
 import 'package:mes_km/app.dart';
+import 'package:mes_km/app/providers.dart';
+import 'package:mes_km/data/local/app_database.dart';
+import 'package:sembast/sembast_memory.dart';
 
 void main() {
   setUpAll(() async {
     await initializeDateFormatting('fr_FR');
   });
 
+  late MesKmDatabase database;
+
+  setUp(() async {
+    database =
+        await MesKmDatabase.open(newDatabaseFactoryMemory(), name: 'shell.db');
+  });
+
+  tearDown(() => database.close());
+
   Future<void> pumpApp(WidgetTester tester) async {
-    await tester.pumpWidget(const MesKmApp());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(database)],
+        child: const MesKmApp(),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
