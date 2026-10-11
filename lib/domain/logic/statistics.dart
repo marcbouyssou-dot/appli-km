@@ -82,6 +82,14 @@ Map<String?, double> detailedTotalByVehicle(Iterable<Trip> trips) {
   };
 }
 
+/// Total dérivé par date civile (trajets + kilomètres non détaillés).
+/// Les dates sans kilomètres n'apparaissent pas dans la map.
+Map<CivilDate, double> totalsByDay({
+  required Iterable<Trip> trips,
+  Iterable<DayExtra> extras = const [],
+}) =>
+    _totalsByDay(trips, extras);
+
 Map<CivilDate, double> _totalsByDay(
   Iterable<Trip> trips,
   Iterable<DayExtra> extras,

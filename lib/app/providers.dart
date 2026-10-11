@@ -62,3 +62,15 @@ final idGeneratorProvider = Provider<IdGenerator>(
 final todayDateProvider = Provider<CivilDate Function()>(
   (ref) => CivilDate.today,
 );
+
+/// Version des données kilométriques : incrémentée après chaque mutation
+/// d'une journée, pour que les vues agrégées (calendrier…) se rechargent.
+class DayDataVersion extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
+}
+
+final dayDataVersionProvider =
+    NotifierProvider<DayDataVersion, int>(DayDataVersion.new);

@@ -13,7 +13,7 @@ import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
 import 'package:mes_km/domain/models/favorite_trip.dart';
 import 'package:mes_km/domain/models/trip.dart';
-import 'package:mes_km/features/today/editable_day_total.dart';
+import 'package:mes_km/features/day/editable_day_total.dart';
 import 'package:sembast/sembast_memory.dart';
 
 void main() {
@@ -205,7 +205,7 @@ void main() {
 
     await tester.tap(find.text('Calendrier'));
     await tester.pumpAndSettle();
-    expect(find.text('Le calendrier de vos kilomètres'), findsOneWidget);
+    expect(find.byKey(const Key('cal-prev')), findsOneWidget);
 
     await tester.tap(find.text('Statistiques'));
     await tester.pumpAndSettle();
@@ -270,7 +270,7 @@ void main() {
     expectTotal(tester, '0');
     expect(find.text('Autres kilomètres'), findsNothing);
     expect(
-      find.text('Aucun kilomètre enregistré aujourd’hui.'),
+      find.text('Aucun kilomètre enregistré ce jour-là.'),
       findsOneWidget,
     );
     final stored = await tester.runAsync(
@@ -430,7 +430,7 @@ void main() {
       expectTotal(tester, '48');
 
       // Deux Trips distincts visibles dans la décomposition.
-      expect(find.text('24 km', skipOffstage: false), findsNWidgets(3));
+      expect(find.text('24 km'), findsNWidgets(3));
       await flushSnackBar(tester);
     });
 
@@ -500,7 +500,7 @@ void main() {
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
       expect(find.text('+26 km'), findsOneWidget);
-      expect(find.text('24 km', skipOffstage: false), findsNWidgets(1));
+      expect(find.text('24 km'), findsNWidgets(1));
 
       await tester.tap(find.byKey(const Key('favorite-fav-1')));
       await tester.pumpAndSettle();

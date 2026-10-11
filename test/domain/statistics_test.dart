@@ -83,6 +83,23 @@ void main() {
     });
   });
 
+  group('totalsByDay', () {
+    test('totaux dérivés par date, jours vides absents', () {
+      final byDay = totalsByDay(
+        trips: [
+          makeTrip(id: 'a', date: CivilDate(2026, 10, 11), km: 24),
+          makeTrip(id: 'b', date: CivilDate(2026, 10, 11), km: 18),
+          makeTrip(id: 'c', date: CivilDate(2026, 10, 5), km: 7),
+        ],
+        extras: [DayExtra(date: CivilDate(2026, 10, 11), extraKm: 45)],
+      );
+
+      expect(byDay[CivilDate(2026, 10, 11)], 87);
+      expect(byDay[CivilDate(2026, 10, 5)], 7);
+      expect(byDay, hasLength(2));
+    });
+  });
+
   group('répartition par véhicule', () {
     test('plusieurs véhicules + trip sans vehicleId', () {
       final trips = [

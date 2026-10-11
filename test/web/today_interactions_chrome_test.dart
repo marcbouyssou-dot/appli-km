@@ -19,7 +19,7 @@ import 'package:mes_km/data/local/sembast_trip_repository.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
 import 'package:mes_km/domain/models/favorite_trip.dart';
-import 'package:mes_km/features/today/editable_day_total.dart';
+import 'package:mes_km/features/day/editable_day_total.dart';
 import 'package:sembast/sembast_memory.dart' hide Finder;
 
 void main() {
@@ -81,7 +81,7 @@ void main() {
         );
     await tester.tap(navLabel('Calendrier'));
     await tester.pumpAndSettle();
-    expect(find.text('Le calendrier de vos kilomètres'), findsOneWidget);
+    expect(find.byKey(const Key('cal-prev')), findsOneWidget);
 
     await tester.tap(navLabel('Aujourd’hui'));
     await tester.pumpAndSettle();
@@ -131,5 +131,60 @@ void main() {
 
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'Web réel : calendrier — édition d’une journée passée, retour '
+      'rafraîchi, navigation basse OK', (tester) async {
+    final database =
+        await MesKmDatabase.open(newDatabaseFactoryMemory(), name: 'wc.db');
+    addTearDown(database.close);
+
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(database),
+        todayDateProvider.overrideWithValue(() => day),
+      ],
+      child: const MesKmApp(),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.calendar_month_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('Octobre 2026'), findsOneWidget);
+
+    // Tap au bord de la cellule du 5, édition rétroactive à 87.
+    final rect =
+        tester.getRect(find.byKey(const Key('cal-cell-2026-10-05')));
+    await tester.tapAt(rect.topLeft + const Offset(4, 4));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(dayTotalFieldKey), '87');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('cal-cell-2026-10-05')),
+        matching: find.text('87 km'),
+      ),
+      findsOneWidget,
+    );
+
+    // Persistance IndexedDB vérifiée côté stockage.
+    final stored = await tester.runAsync(() =>
+        SembastDayExtraRepository(database.db)
+            .getForDate(CivilDate(2026, 10, 5)));
+    expect(stored?.extraKm, 87);
+
+    // Navigation basse après clavier.
+    await tester.tap(find.byIcon(Icons.today_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('km aujourd’hui'), findsOneWidget);
   });
 }

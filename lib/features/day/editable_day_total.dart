@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/logic/day_total.dart';
+import '../../domain/models/civil_date.dart';
 import '../../domain/models/km.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
-import 'today_controller.dart';
+import 'day_controller.dart';
 
 /// Clé du champ du total du jour (ciblage dans les tests).
 const dayTotalFieldKey = Key('day-total-field');
@@ -22,8 +23,14 @@ const dayTotalCardKey = Key('day-total-card');
 /// aux trajets détaillés) restaure la dernière valeur valide et s'explique
 /// par une snackbar.
 class EditableDayTotal extends ConsumerStatefulWidget {
-  const EditableDayTotal({super.key, required this.totalKm});
+  const EditableDayTotal({
+    super.key,
+    required this.date,
+    required this.totalKm,
+  });
 
+  /// Journée éditée : toutes les opérations métier utilisent cette date.
+  final CivilDate date;
   final double totalKm;
 
   @override
@@ -90,7 +97,7 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
       }
 
       final result = await ref
-          .read(todayControllerProvider.notifier)
+          .read(dayControllerProvider(widget.date).notifier)
           .declareTotal(value);
 
       if (!mounted) return;

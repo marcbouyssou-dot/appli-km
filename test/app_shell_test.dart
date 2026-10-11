@@ -5,7 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:mes_km/app.dart';
 import 'package:mes_km/app/providers.dart';
 import 'package:mes_km/data/local/app_database.dart';
-import 'package:mes_km/features/today/editable_day_total.dart';
+import 'package:mes_km/features/day/editable_day_total.dart';
 import 'package:sembast/sembast_memory.dart' hide Finder;
 
 void main() {
@@ -59,7 +59,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.calendar_month_outlined));
     await tester.pumpAndSettle();
-    expect(find.text('Le calendrier de vos kilomètres'), findsOneWidget);
+    expect(find.byKey(const Key('cal-prev')), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.bar_chart_outlined));
     await tester.pumpAndSettle();
@@ -94,7 +94,7 @@ void main() {
 
     await tester.tap(navLabel('Calendrier'));
     await tester.pumpAndSettle();
-    expect(find.text('Le calendrier de vos kilomètres'), findsOneWidget);
+    expect(find.byKey(const Key('cal-prev')), findsOneWidget);
 
     await tester.tap(navLabel('Statistiques'));
     await tester.pumpAndSettle();

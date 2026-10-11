@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
+import '../../app/providers.dart';
+import '../day/day_controller.dart';
 import 'favorite_form_sheet.dart';
 import 'favorites_controller.dart';
 import 'manage_favorites_screen.dart';
-import 'today_controller.dart';
 
 /// Section « Trajets favoris » de l'écran Aujourd'hui.
 ///
@@ -22,8 +23,9 @@ class FavoritesSection extends ConsumerWidget {
     WidgetRef ref,
     FavoriteTrip favorite,
   ) async {
+    final today = ref.read(todayDateProvider)();
     await ref
-        .read(todayControllerProvider.notifier)
+        .read(dayControllerProvider(today).notifier)
         .addTripFromFavorite(favorite);
     if (!context.mounted) return;
     // Feedback bref, remplacé au tap suivant : n'empile jamais.

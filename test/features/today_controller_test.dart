@@ -10,7 +10,7 @@ import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
 import 'package:mes_km/domain/models/favorite_trip.dart';
 import 'package:mes_km/domain/models/trip.dart';
-import 'package:mes_km/features/today/today_controller.dart';
+import 'package:mes_km/features/day/day_controller.dart';
 import 'package:sembast/sembast_memory.dart';
 
 void main() {
@@ -36,11 +36,11 @@ void main() {
 
   tearDown(() => database.close());
 
-  TodayController controller() =>
-      container.read(todayControllerProvider.notifier);
+  DayController controller() =>
+      container.read(dayControllerProvider(day).notifier);
 
-  Future<TodayState> state() =>
-      container.read(todayControllerProvider.future);
+  Future<DayState> state() =>
+      container.read(dayControllerProvider(day).future);
 
   Future<void> seedTrips2418() async {
     await controller().addTrip(distanceKm: 24, isRoundTrip: false);
