@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mes_km/app/providers.dart';
 import 'package:mes_km/data/local/app_database.dart';
 import 'package:mes_km/data/local/sembast_day_extra_repository.dart';
+import 'package:mes_km/data/local/sembast_favorite_trip_repository.dart';
 import 'package:mes_km/data/local/sembast_trip_repository.dart';
 import 'package:mes_km/domain/logic/day_total.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
@@ -258,6 +259,85 @@ void main() {
       container = await makeContainer();
 
       expect((await state()).totalKm, 24);
+    });
+  });
+
+  group('effacer la journée', () {
+    test('DayExtra seul => 0', () async {
+      await controller().declareTotal(33);
+
+      await controller().clearDay();
+
+      final s = await state();
+      expect(s.totalKm, 0);
+      expect(s.isEmpty, isTrue);
+      expect(
+        await SembastDayExtraRepository(database.db).getForDate(day),
+        isNull,
+      );
+    });
+
+    test('3 Trips seuls => 0', () async {
+      await controller().addTrip(distanceKm: 24, isRoundTrip: false);
+      await controller().addTrip(distanceKm: 24, isRoundTrip: false);
+      await controller().addTrip(distanceKm: 18, isRoundTrip: false);
+
+      await controller().clearDay();
+
+      expect((await state()).isEmpty, isTrue);
+      expect(await SembastTripRepository(database.db).getByDate(day), isEmpty);
+    });
+
+    test('Trips + DayExtra (24+24+18 + extra 33 = 99) => tout effacé',
+        () async {
+      await controller().addTrip(distanceKm: 24, isRoundTrip: false);
+      await controller().addTrip(distanceKm: 24, isRoundTrip: false);
+      await controller().addTrip(distanceKm: 18, isRoundTrip: false);
+      await controller().declareTotal(99); // extra 33
+      expect((await state()).totalKm, 99);
+
+      await controller().clearDay();
+
+      final s = await state();
+      expect(s.totalKm, 0);
+      expect(s.trips, isEmpty);
+      expect(s.extra, isNull);
+    });
+
+    test('favoris et autre journée intacts', () async {
+      final favoriteRepo = SembastFavoriteTripRepository(database.db);
+      await favoriteRepo.put(FavoriteTrip(
+          id: 'fav', label: 'Cabinet', distanceKm: 24, sortOrder: 0));
+      await SembastTripRepository(database.db).put(Trip(
+        id: 'autre',
+        date: CivilDate(2026, 10, 10),
+        distanceKm: 55,
+        createdAt: DateTime.utc(2026, 10, 10),
+      ));
+      await controller().addTrip(distanceKm: 24, isRoundTrip: false);
+
+      await controller().clearDay();
+
+      expect(await favoriteRepo.getAllOrdered(), hasLength(1));
+      expect(
+        (await SembastTripRepository(database.db)
+                .getByDate(CivilDate(2026, 10, 10)))
+            .single
+            .distanceKm,
+        55,
+      );
+    });
+
+    test('réouverture : la journée effacée reste vide', () async {
+      await controller().addTrip(distanceKm: 24, isRoundTrip: false);
+      await controller().declareTotal(57);
+      await controller().clearDay();
+      await database.close();
+
+      database = await MesKmDatabase.open(factory, name: 'today.db');
+      container = await makeContainer();
+
+      expect((await state()).isEmpty, isTrue);
     });
   });
 

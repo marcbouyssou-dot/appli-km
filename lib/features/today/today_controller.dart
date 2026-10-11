@@ -143,6 +143,18 @@ class TodayController extends AsyncNotifier<TodayState> {
     await ref.read(tripRepositoryProvider).delete(id);
     await _refresh();
   }
+
+  /// Efface TOUTE la journée (trajets + extra), atomiquement.
+  ///
+  /// Opération destructive EXPLICITE, déclenchée après confirmation UI —
+  /// l'édition directe du total à 0 avec des trajets reste refusée, c'est
+  /// la protection contre la suppression accidentelle. Les favoris et les
+  /// autres journées ne sont jamais touchés.
+  Future<void> clearDay() async {
+    final current = await future;
+    await ref.read(dayClearRepositoryProvider).clearDay(current.date);
+    await _refresh();
+  }
 }
 
 final todayControllerProvider =

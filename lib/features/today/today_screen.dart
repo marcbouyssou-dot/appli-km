@@ -124,6 +124,33 @@ class _TodayView extends ConsumerWidget {
     }
   }
 
+  Future<void> _confirmClearDay(BuildContext context, WidgetRef ref) async {
+    final controller = ref.read(todayControllerProvider.notifier);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Effacer cette journée ?'),
+        content: const Text(
+          'Tous les trajets et kilomètres enregistrés aujourd’hui '
+          'seront supprimés. Les favoris sont conservés.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Effacer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.clearDay();
+    }
+  }
+
   String _tripLabel(Trip trip) {
     final route = [
       trip.origin,
@@ -143,7 +170,35 @@ class _TodayView extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
       children: [
-        const ScreenTitle('Aujourd’hui'),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Expanded(child: ScreenTitle('Aujourd’hui')),
+            // Action secondaire discrète : visible seulement si la journée
+            // contient des kilomètres (opération destructive explicite).
+            if (!today.isEmpty)
+              PopupMenuButton<String>(
+                key: const Key('day-menu'),
+                icon: const Icon(Icons.more_horiz),
+                tooltip: 'Options de la journée',
+                onSelected: (value) {
+                  if (value == 'clear') {
+                    _confirmClearDay(context, ref);
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'clear',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.delete_sweep_outlined),
+                      title: Text('Effacer la journée'),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
         Text(
           dateText[0].toUpperCase() + dateText.substring(1),
           style: theme.textTheme.titleMedium?.copyWith(

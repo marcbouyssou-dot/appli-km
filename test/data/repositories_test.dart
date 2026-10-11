@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mes_km/data/local/app_database.dart';
+import 'package:mes_km/data/local/sembast_day_clear_repository.dart';
 import 'package:mes_km/data/local/sembast_day_extra_repository.dart';
 import 'package:mes_km/data/local/sembast_favorite_trip_repository.dart';
 import 'package:mes_km/data/local/sembast_settings_repository.dart';
@@ -222,6 +223,35 @@ void main() {
       final all = await repo.getAll();
       expect(all.single.id, 'm-1');
       expect(all.single.endDate, CivilDate(2026, 8, 12));
+    });
+  });
+
+  group('DayClearRepository', () {
+    test(
+        'clearDay : trajets + extra du jour supprimés atomiquement ; '
+        'autres journées et favoris intacts', () async {
+      final tripRepo = SembastTripRepository(database.db);
+      final extraRepo = SembastDayExtraRepository(database.db);
+      final favoriteRepo = SembastFavoriteTripRepository(database.db);
+      final day = CivilDate(2026, 10, 11);
+      final otherDay = CivilDate(2026, 10, 12);
+
+      await tripRepo.put(makeTrip('t-1', day, 24));
+      await tripRepo.put(makeTrip('t-2', day, 18));
+      await tripRepo.put(makeTrip('t-autre', otherDay, 99));
+      await extraRepo.set(DayExtra(date: day, extraKm: 33));
+      await extraRepo.set(DayExtra(date: otherDay, extraKm: 5));
+      await favoriteRepo.put(FavoriteTrip(
+          id: 'fav', label: 'Cabinet', distanceKm: 24, sortOrder: 0));
+
+      await SembastDayClearRepository(database.db).clearDay(day);
+
+      expect(await tripRepo.getByDate(day), isEmpty);
+      expect(await extraRepo.getForDate(day), isNull);
+      // Rien d'autre n'est touché.
+      expect((await tripRepo.getByDate(otherDay)).single.distanceKm, 99);
+      expect((await extraRepo.getForDate(otherDay))?.extraKm, 5);
+      expect(await favoriteRepo.getAllOrdered(), hasLength(1));
     });
   });
 

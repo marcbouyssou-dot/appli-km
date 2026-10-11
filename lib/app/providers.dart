@@ -2,12 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/ids.dart';
 import '../data/local/app_database.dart';
+import '../data/local/sembast_day_clear_repository.dart';
 import '../data/local/sembast_day_extra_repository.dart';
 import '../data/local/sembast_favorite_trip_repository.dart';
 import '../data/local/sembast_settings_repository.dart';
 import '../data/local/sembast_trip_repository.dart';
 import '../data/local/sembast_vacation_repository.dart';
 import '../data/local/sembast_vehicle_repository.dart';
+import '../data/repositories/day_clear_repository.dart';
 import '../data/repositories/day_extra_repository.dart';
 import '../data/repositories/favorite_trip_repository.dart';
 import '../data/repositories/settings_repository.dart';
@@ -30,6 +32,10 @@ final tripRepositoryProvider = Provider<TripRepository>(
 
 final dayExtraRepositoryProvider = Provider<DayExtraRepository>(
   (ref) => SembastDayExtraRepository(ref.watch(databaseProvider).db),
+);
+
+final dayClearRepositoryProvider = Provider<DayClearRepository>(
+  (ref) => SembastDayClearRepository(ref.watch(databaseProvider).db),
 );
 
 final favoriteTripRepositoryProvider = Provider<FavoriteTripRepository>(

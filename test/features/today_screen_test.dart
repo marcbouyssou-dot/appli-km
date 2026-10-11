@@ -573,6 +573,71 @@ void main() {
     });
   });
 
+  group('effacer la journée', () {
+    testWidgets('journée vide : action absente', (tester) async {
+      await pumpApp(tester);
+      expect(find.byKey(const Key('day-menu')), findsNothing);
+    });
+
+    testWidgets(
+        'menu -> confirmation -> tout effacé, favoris conservés',
+        (tester) async {
+      await seedTrip(tester, 't-1', 24);
+      await seedTrip(tester, 't-2', 18);
+      await seedExtra(tester, 33);
+      await tester.runAsync(
+          () => SembastFavoriteTripRepository(database.db).put(FavoriteTrip(
+                id: 'fav-1',
+                label: 'Cabinet ↔ EHPAD',
+                distanceKm: 24,
+                sortOrder: 0,
+              )));
+
+      await pumpApp(tester);
+      expectTotal(tester, '75');
+
+      await tester.tap(find.byKey(const Key('day-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Effacer la journée'));
+      await tester.pumpAndSettle();
+      expect(find.text('Effacer cette journée ?'), findsOneWidget);
+
+      await tester.tap(find.text('Effacer'));
+      await tester.pumpAndSettle();
+
+      expectTotal(tester, '0');
+      expect(find.text('Trajets détaillés'), findsNothing);
+      expect(find.text('Autres kilomètres'), findsNothing);
+      expect(find.byKey(const Key('day-menu')), findsNothing);
+      // Les favoris restent présents et utilisables.
+      expect(find.text('Cabinet ↔ EHPAD'), findsOneWidget);
+
+      final trips = await tester.runAsync(
+          () => SembastTripRepository(database.db).getByDate(day));
+      expect(trips, isEmpty);
+      final extra = await tester.runAsync(
+          () => SembastDayExtraRepository(database.db).getForDate(day));
+      expect(extra, isNull);
+    });
+
+    testWidgets('annuler la confirmation : rien ne change', (tester) async {
+      await seedTrip(tester, 't-1', 24);
+      await seedExtra(tester, 33);
+
+      await pumpApp(tester);
+      await tester.tap(find.byKey(const Key('day-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Effacer la journée'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Annuler'));
+      await tester.pumpAndSettle();
+
+      expectTotal(tester, '57');
+      expect(find.text('24 km'), findsOneWidget);
+      expect(find.text('33 km'), findsOneWidget);
+    });
+  });
+
   testWidgets('état de chargement avant les données', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
