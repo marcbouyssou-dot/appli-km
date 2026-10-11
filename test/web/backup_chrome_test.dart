@@ -1,0 +1,84 @@
+@TestOn('browser')
+library;
+
+// Cycle sauvegarde/restauration sur IndexedDB RÉEL (Chrome).
+// Le partage/sélecteur de fichier natif ne peut pas être automatisé en
+// headless : il reste couvert par la recette humaine iPhone.
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mes_km/data/backup/backup_codec.dart';
+import 'package:mes_km/data/backup/backup_service.dart';
+import 'package:mes_km/data/local/sembast_favorite_trip_repository.dart';
+import 'package:mes_km/data/local/sembast_trip_repository.dart';
+import 'package:mes_km/data/local/web_database.dart';
+import 'package:mes_km/domain/models/civil_date.dart';
+import 'package:mes_km/domain/models/favorite_trip.dart';
+import 'package:mes_km/domain/models/trip.dart';
+
+void main() {
+  test('IndexedDB réel : export -> mutation -> restauration atomique',
+      () async {
+    final database = await openMesKmDatabaseWeb(name: 'backup_test.db');
+    final service = BackupService(database.db);
+
+    // Nettoyage (la base IndexedDB survit entre exécutions de tests).
+    await service.restore(decodeBackup(encodeBackup(
+      exportedAt: DateTime.utc(2026, 1, 1),
+      trips: const [],
+      dayExtras: const [],
+      favorites: const [],
+      vehicles: const [],
+      vacationPeriods: const [],
+      settings: (await service.snapshot()).settings,
+    )));
+
+    await SembastTripRepository(database.db).put(Trip(
+      id: 't-1',
+      date: CivilDate(2026, 10, 11),
+      distanceKm: 42,
+      createdAt: DateTime.utc(2026, 10, 11, 9),
+    ));
+    await SembastFavoriteTripRepository(database.db).put(FavoriteTrip(
+        id: 'f-1', label: 'TEST BACKUP', distanceKm: 24, sortOrder: 0));
+
+    // Export.
+    final snapshot = await service.snapshot();
+    final json = encodeBackup(
+      exportedAt: DateTime.now(),
+      trips: snapshot.trips,
+      dayExtras: snapshot.dayExtras,
+      favorites: snapshot.favorites,
+      vehicles: snapshot.vehicles,
+      vacationPeriods: snapshot.vacationPeriods,
+      settings: snapshot.settings,
+    );
+
+    // Mutation puis restauration.
+    await SembastTripRepository(database.db).delete('t-1');
+    await SembastFavoriteTripRepository(database.db).delete('f-1');
+    expect(await SembastTripRepository(database.db).getAll(), isEmpty);
+
+    await service.restore(decodeBackup(json));
+
+    expect(
+        (await SembastTripRepository(database.db).getAll()).single.distanceKm,
+        42);
+    expect(
+        (await SembastFavoriteTripRepository(database.db).getAllOrdered())
+            .single
+            .label,
+        'TEST BACKUP');
+
+    // Rollback réel : échec avant commit => rien ne bouge.
+    await expectLater(
+      service.restore(
+        decodeBackup(json),
+        beforeCommitForTest: () async => throw StateError('panne'),
+      ),
+      throwsStateError,
+    );
+    expect(await SembastTripRepository(database.db).getAll(), hasLength(1));
+
+    await database.close();
+  });
+}

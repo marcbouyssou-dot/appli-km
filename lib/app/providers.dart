@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/backup/backup_file_gateway.dart';
+import '../data/backup/backup_service.dart';
+import '../data/backup/platform_backup_file_gateway.dart';
 import '../data/ids.dart';
 import '../data/local/app_database.dart';
 import '../data/local/sembast_day_clear_repository.dart';
@@ -56,6 +59,18 @@ final settingsRepositoryProvider = Provider<SettingsRepository>(
 
 final idGeneratorProvider = Provider<IdGenerator>(
   (ref) => const IdGenerator(),
+);
+
+final backupServiceProvider = Provider<BackupService>(
+  (ref) => BackupService(ref.watch(databaseProvider).db),
+);
+
+final backupMetaRepositoryProvider = Provider<BackupMetaRepository>(
+  (ref) => BackupMetaRepository(ref.watch(databaseProvider).db),
+);
+
+final backupFileGatewayProvider = Provider<BackupFileGateway>(
+  (ref) => createBackupFileGateway(),
 );
 
 /// Date civile « aujourd'hui », surchargeable en test.

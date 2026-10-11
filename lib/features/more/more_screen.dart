@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/tokens.dart';
 import '../../widgets/placeholder_card.dart';
+import '../backup/backup_screen.dart';
 import '../today/manage_favorites_screen.dart';
 
 class MoreScreen extends StatelessWidget {
@@ -37,9 +38,18 @@ class MoreScreen extends StatelessWidget {
           icon: Icons.description_outlined,
           title: 'Documents',
         ),
-        const _UpcomingTile(
-          icon: Icons.save_alt_outlined,
-          title: 'Sauvegarde',
+        ListTile(
+          leading:
+              Icon(Icons.save_alt_outlined, color: theme.colorScheme.primary),
+          title: const Text('Sauvegarde'),
+          subtitle: const Text('Exporter ou restaurer vos données'),
+          trailing: const Icon(Icons.chevron_right),
+          minTileHeight: AppSizes.minTouchTarget + 8,
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const BackupScreen(),
+            ));
+          },
         ),
         const _UpcomingTile(
           icon: Icons.settings_outlined,
