@@ -36,12 +36,15 @@
   <!-- Fond immédiat pendant le chargement du moteur Flutter :
        évite l'écran blanc prolongé, suit le mode clair/sombre système. -->
   <style>
-    /* Page verrouillée : sur Safari iOS, le focus d'un champ fait défiler
-       la page (scroll-into-view) et le décalage peut persister après la
-       fermeture du clavier — les taps atterrissent alors à côté des
-       éléments (navigation basse « morte », imprécision). position:fixed +
-       overflow:hidden empêchent tout défilement de la page hôte ;
-       touch-action: manipulation élimine le délai de tap restant. */
+    /* Shell volontairement proche du standard Flutter Web.
+       - overflow:hidden + overscroll-behavior : la page hôte ne défile pas ;
+       - touch-action: manipulation : pas de délai de double-tap Safari ;
+       - PAS de body{position:fixed} : sur Safari iOS en PWA standalone,
+         un body fixe décale le hit-testing initial (bas d'écran mort
+         jusqu'au premier cycle focus/clavier qui force un recalcul des
+         métriques) — cause du bug « premier toucher » KM-006D.
+       Le maintien de la page à l'origine après le clavier (bug KM-004C)
+       est assuré par l'épinglage de scroll ci-dessous, pas par du fixed. */
     html, body {
       margin: 0;
       padding: 0;
@@ -50,11 +53,6 @@
       overscroll-behavior: none;
       touch-action: manipulation;
       background-color: #F9F9FF;
-    }
-    body {
-      position: fixed;
-      inset: 0;
-      width: 100%;
     }
     #splash {
       position: fixed;
@@ -87,6 +85,24 @@
       var splash = document.getElementById('splash');
       if (splash) { splash.remove(); }
     });
+
+    // Épinglage de scroll : quand le clavier iOS s'ouvre, Safari peut faire
+    // défiler la page hôte (scroll-into-view) et le décalage peut persister
+    // après fermeture — le hit-testing Flutter serait alors désaligné
+    // (bug KM-004C). On ramène la page à l'origine à chaque défilement ou
+    // changement de viewport visuel. Correctif d'état standard : aucune
+    // interaction simulée, aucun délai.
+    (function () {
+      var pin = function () {
+        if (window.scrollX !== 0 || window.scrollY !== 0) {
+          window.scrollTo(0, 0);
+        }
+      };
+      window.addEventListener('scroll', pin);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', pin);
+      }
+    })();
   </script>
   <!-- Bootstrap personnalisé : le loader Flutter ATTEND par défaut
        l'activation/mise à jour du service worker (plafond 4000 ms) avant
