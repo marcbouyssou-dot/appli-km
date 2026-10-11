@@ -100,6 +100,30 @@ void main() {
     });
   });
 
+  group('totalKmByVehicle (Trips + DayExtra, attribution figée)', () {
+    test('cumul trajets + extras par véhicule, null = sans véhicule', () {
+      final totals = totalKmByVehicle(
+        trips: [
+          makeTrip(id: 'a', km: 24, vehicleId: 'peugeot'),
+          makeTrip(id: 'b', km: 18, vehicleId: 'peugeot'),
+          makeTrip(id: 'c', km: 50, vehicleId: 'renault'),
+          makeTrip(id: 'd', km: 7),
+        ],
+        extras: [
+          DayExtra(
+              date: CivilDate(2026, 10, 5),
+              extraKm: 33,
+              vehicleId: 'peugeot'),
+          DayExtra(date: CivilDate(2026, 10, 6), extraKm: 5),
+        ],
+      );
+
+      expect(totals['peugeot'], 24 + 18 + 33);
+      expect(totals['renault'], 50);
+      expect(totals[null], 7 + 5);
+    });
+  });
+
   group('répartition par véhicule', () {
     test('plusieurs véhicules + trip sans vehicleId', () {
       final trips = [

@@ -73,12 +73,17 @@ Trip tripFromDb(String id, Map<String, Object?> map) => Trip(
 
 Map<String, Object?> dayExtraToDb(DayExtra extra) => {
       'extraKm': extra.extraKm,
+      if (extra.vehicleId != null) 'vehicleId': extra.vehicleId,
       if (extra.note != null) 'note': extra.note,
     };
 
+/// Les enregistrements antérieurs à KM-009 n'ont pas de champ vehicleId :
+/// l'absence vaut null — aucune migration de base nécessaire (lecture
+/// compatible, schéma sembast inchangé en v1).
 DayExtra dayExtraFromDb(String dateKey, Map<String, Object?> map) => DayExtra(
       date: CivilDate.parse(dateKey),
       extraKm: _requireDouble(map, 'extraKm'),
+      vehicleId: map['vehicleId'] as String?,
       note: map['note'] as String?,
     );
 

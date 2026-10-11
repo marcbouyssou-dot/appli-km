@@ -135,6 +135,76 @@ void main() {
     });
   });
 
+  group('migration backup v1 -> v2 (fixture synthétique KM-008)', () {
+    // Enveloppe EXACTEMENT au format v1 : dayExtras SANS vehicleId.
+    // Les .kmbackup déjà exportés doivent rester restaurables à jamais.
+    const fixtureV1 = '''
+{
+  "schemaVersion": 1,
+  "appVersion": "1.0.0",
+  "exportedAt": "2026-10-11T14:00:00.000Z",
+  "counts": {"trips": 1, "dayExtras": 1, "favoriteTrips": 1,
+              "vehicles": 1, "vacationPeriods": 1},
+  "data": {
+    "trips": [
+      {"id": "t-1", "date": "2026-10-11", "distanceKm": 42.0,
+       "isRoundTrip": false, "vehicleId": "v-1",
+       "createdAt": "2026-10-11T09:00:00.000Z"}
+    ],
+    "dayExtras": [
+      {"date": "2026-10-05", "extraKm": 87.0, "note": "tournée"}
+    ],
+    "favoriteTrips": [
+      {"id": "f-1", "label": "TEST BACKUP", "distanceKm": 24.0,
+       "defaultRoundTrip": false, "sortOrder": 0}
+    ],
+    "vehicles": [
+      {"id": "v-1", "name": "Clio", "category": "car"}
+    ],
+    "vacationPeriods": [
+      {"id": "p-1", "startDate": "2026-08-03", "endDate": "2026-08-10"}
+    ],
+    "settings": {"themePreference": "system"}
+  }
+}
+''';
+
+    test('v1 accepté et migré : DayExtra.vehicleId = null, tout restauré',
+        () {
+      final content = decodeBackup(fixtureV1);
+
+      expect(content.trips.single.distanceKm, 42);
+      expect(content.dayExtras.single.extraKm, 87);
+      expect(content.dayExtras.single.vehicleId, isNull,
+          reason: 'v1 ne portait pas d’attribution : null');
+      expect(content.dayExtras.single.note, 'tournée');
+      expect(content.favorites.single.label, 'TEST BACKUP');
+      expect(content.vehicles.single.name, 'Clio');
+      expect(content.vacationPeriods, hasLength(1));
+    });
+
+    test('v2 round-trip : vehicleId des DayExtra exporté et relu', () {
+      final json = encodeBackup(
+        exportedAt: DateTime.utc(2026, 10, 11),
+        trips: const [],
+        dayExtras: [
+          DayExtra(
+              date: CivilDate(2026, 10, 5),
+              extraKm: 33,
+              vehicleId: 'v-1'),
+        ],
+        favorites: const [],
+        vehicles: fullVehicles,
+        vacationPeriods: const [],
+        settings: AppSettings(),
+      );
+      expect(json, contains('"schemaVersion": 2'));
+
+      final content = decodeBackup(json);
+      expect(content.dayExtras.single.vehicleId, 'v-1');
+    });
+  });
+
   group('validation / refus', () {
     test('JSON invalide', () {
       expect(() => decodeBackup('pas du json'),
@@ -150,7 +220,7 @@ void main() {
 
     test('version future : refus explicite, jamais partiel', () {
       final json = encodeFull().replaceFirst(
-          '"schemaVersion": 1', '"schemaVersion": 99');
+          '"schemaVersion": 2', '"schemaVersion": 99');
       expect(() => decodeBackup(json),
           throwsA(isA<BackupTooRecentException>()));
       expect(BackupTooRecentException().toString(),
@@ -215,6 +285,13 @@ void main() {
       final extras = (map['data'] as Map)['dayExtras'] as List;
       extras.add(Map<String, Object?>.from(extras[0] as Map));
       expectRefused(map, 'doublon');
+    });
+
+    test('référence véhicule inconnue dans dayExtras refusée (v2)', () {
+      final map = fullMap();
+      (((map['data'] as Map)['dayExtras'] as List)[0]
+          as Map)['vehicleId'] = 'v-fantôme';
+      expectRefused(map, 'véhicule inconnu');
     });
 
     test('vehicleId null accepté (politique nullable explicite)', () {

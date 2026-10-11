@@ -226,6 +226,25 @@ void main() {
     });
   });
 
+  group('compatibilité pré-KM-009 (pas de migration de base nécessaire)', () {
+    test('ancien DayExtra sans champ vehicleId => null, données intactes',
+        () async {
+      // Enregistrement tel qu'écrit AVANT KM-009 (sans vehicleId).
+      await dayExtrasStore
+          .record('2026-10-05')
+          .put(database.db, {'extraKm': 87.0, 'note': 'ancienne'});
+
+      final extra = await SembastDayExtraRepository(database.db)
+          .getForDate(CivilDate(2026, 10, 5));
+
+      expect(extra?.extraKm, 87);
+      expect(extra?.note, 'ancienne');
+      expect(extra?.vehicleId, isNull);
+      expect(database.version, MesKmDatabase.schemaVersion,
+          reason: 'schéma sembast inchangé (lecture compatible)');
+    });
+  });
+
   group('DayClearRepository', () {
     test(
         'clearDay : trajets + extra du jour supprimés atomiquement ; '

@@ -4,6 +4,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/placeholder_card.dart';
 import '../backup/backup_screen.dart';
 import '../today/manage_favorites_screen.dart';
+import '../vehicles/vehicles_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -30,9 +31,18 @@ class MoreScreen extends StatelessWidget {
             ));
           },
         ),
-        const _UpcomingTile(
-          icon: Icons.directions_car_outlined,
-          title: 'Véhicules',
+        ListTile(
+          leading: Icon(Icons.directions_car_outlined,
+              color: theme.colorScheme.primary),
+          title: const Text('Véhicules'),
+          subtitle: const Text('Gérer vos véhicules et le principal'),
+          trailing: const Icon(Icons.chevron_right),
+          minTileHeight: AppSizes.minTouchTarget + 8,
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const VehiclesScreen(),
+            ));
+          },
         ),
         const _UpcomingTile(
           icon: Icons.description_outlined,

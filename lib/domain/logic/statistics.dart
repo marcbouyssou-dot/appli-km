@@ -64,6 +64,28 @@ double averageKmPerActiveDay({
   return normalizeKm(total / activeTotals.length);
 }
 
+/// Kilomètres TOTAUX par véhicule : trajets détaillés + kilomètres non
+/// détaillés, groupés par attribution figée. Clé `null` = sans véhicule.
+Map<String?, double> totalKmByVehicle({
+  required Iterable<Trip> trips,
+  Iterable<DayExtra> extras = const [],
+}) {
+  final sums = <String?, double>{};
+  void add(String? vehicleId, double km) {
+    sums.update(vehicleId, (value) => value + km, ifAbsent: () => km);
+  }
+
+  for (final trip in trips) {
+    add(trip.vehicleId, trip.distanceKm);
+  }
+  for (final extra in extras) {
+    add(extra.vehicleId, extra.extraKm);
+  }
+  return {
+    for (final entry in sums.entries) entry.key: normalizeKm(entry.value),
+  };
+}
+
 /// Répartition des kilomètres DÉTAILLÉS par véhicule.
 /// Clé `null` : trajets sans véhicule renseigné.
 /// Les kilomètres non détaillés ne sont pas attribuables à un véhicule et

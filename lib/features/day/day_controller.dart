@@ -67,7 +67,19 @@ class DayController extends AsyncNotifier<DayState> {
       if (dayExtra == null) {
         await repo.deleteForDate(current.date);
       } else {
-        await repo.set(dayExtra);
+        // Attribution FIGÉE : un extra existant conserve son véhicule (et sa
+        // note) lors d'une modification du total ; un nouvel extra fige le
+        // véhicule principal ACTUEL (null si aucun). Changer de principal
+        // plus tard ne réattribue jamais l'historique.
+        final existing = current.extra;
+        final vehicleId =
+            existing?.vehicleId ?? await _currentMainVehicleId();
+        await repo.set(DayExtra(
+          date: dayExtra.date,
+          extraKm: dayExtra.extraKm,
+          vehicleId: vehicleId,
+          note: existing?.note,
+        ));
       }
       await _refresh();
     }
@@ -75,12 +87,33 @@ class DayController extends AsyncNotifier<DayState> {
     return result;
   }
 
+  Future<String?> _currentMainVehicleId() async =>
+      (await ref.read(settingsRepositoryProvider).get()).mainVehicleId;
+
+  /// Correction explicite de l'attribution des kilomètres non détaillés :
+  /// change UNIQUEMENT le véhicule, jamais le kilométrage.
+  Future<void> setDayExtraVehicle(String? vehicleId) async {
+    final current = await future;
+    final extra = current.extra;
+    if (extra == null) return;
+    await ref.read(dayExtraRepositoryProvider).set(DayExtra(
+          date: extra.date,
+          extraKm: extra.extraKm,
+          vehicleId: vehicleId,
+          note: extra.note,
+        ));
+    await _refresh();
+  }
+
+  /// [vehicleId] : choisi dans le formulaire (pré-sélectionné sur le
+  /// principal actuel) ; null si aucun véhicule. Figé dans le Trip.
   Future<void> addTrip({
     required double distanceKm,
     required bool isRoundTrip,
     String? origin,
     String? destination,
     String? purpose,
+    String? vehicleId,
   }) async {
     final trip = Trip(
       id: ref.read(idGeneratorProvider).newId(),
@@ -90,6 +123,7 @@ class DayController extends AsyncNotifier<DayState> {
       origin: origin,
       destination: destination,
       purpose: purpose,
+      vehicleId: vehicleId,
       createdAt: DateTime.now(),
     );
     await ref.read(tripRepositoryProvider).put(trip);
@@ -102,7 +136,25 @@ class DayController extends AsyncNotifier<DayState> {
   /// `defaultRoundTrip` n'est qu'une métadonnée), le DayExtra du jour n'est
   /// jamais recalculé : le favori AJOUTE des kilomètres. Deux taps créent
   /// deux Trips distincts — aucune déduplication.
-  Future<void> addTripFromFavorite(FavoriteTrip favorite) async {
+  ///
+  /// Véhicule : vehicleId explicite du favori, sinon (« Automatique ») le
+  /// principal ACTUEL, résolu au moment du tap et figé dans le Trip.
+  /// Un favori lié à un véhicule ARCHIVÉ ne produit jamais silencieusement
+  /// un Trip archivé : repli sur le principal actuel, et retour `true`
+  /// pour que l'UI informe l'utilisateur (favori à corriger).
+  Future<bool> addTripFromFavorite(FavoriteTrip favorite) async {
+    var archivedFallback = false;
+    String? vehicleId = favorite.vehicleId;
+    if (vehicleId != null) {
+      final vehicle =
+          await ref.read(vehicleRepositoryProvider).getById(vehicleId);
+      if (vehicle == null || vehicle.isArchived) {
+        archivedFallback = true;
+        vehicleId = null;
+      }
+    }
+    vehicleId ??= await _currentMainVehicleId();
+
     final trip = Trip(
       id: ref.read(idGeneratorProvider).newId(),
       date: date,
@@ -111,14 +163,17 @@ class DayController extends AsyncNotifier<DayState> {
       origin: favorite.origin,
       destination: favorite.destination,
       purpose: favorite.purpose,
-      vehicleId: favorite.vehicleId,
+      vehicleId: vehicleId,
       createdAt: DateTime.now(),
     );
     await ref.read(tripRepositoryProvider).put(trip);
     await _refresh();
+    return archivedFallback;
   }
 
   /// Remplace le trajet [original] (même id, même createdAt, même date).
+  /// [vehicleId] : par défaut le véhicule HISTORIQUE du trajet — jamais
+  /// le principal du moment.
   Future<void> updateTrip(
     Trip original, {
     required double distanceKm,
@@ -126,6 +181,7 @@ class DayController extends AsyncNotifier<DayState> {
     String? origin,
     String? destination,
     String? purpose,
+    String? vehicleId,
   }) async {
     final updated = Trip(
       id: original.id,
@@ -135,6 +191,7 @@ class DayController extends AsyncNotifier<DayState> {
       origin: origin,
       destination: destination,
       purpose: purpose,
+      vehicleId: vehicleId,
       createdAt: original.createdAt,
     );
     await ref.read(tripRepositoryProvider).put(updated);

@@ -12,7 +12,8 @@ import '../../domain/models/vehicle.dart';
 import '../local/codecs.dart';
 
 /// Version du FORMAT de sauvegarde — indépendante du schéma de la base.
-const int backupSchemaVersion = 1;
+/// v2 (KM-009) : DayExtra porte une attribution véhicule figée (vehicleId?).
+const int backupSchemaVersion = 2;
 
 /// Version applicative embarquée dans l'enveloppe (information).
 const String backupAppVersion = '1.0.0';
@@ -36,9 +37,14 @@ class BackupFormatException implements Exception {
 }
 
 /// Migrateurs purs v(n-1) -> v(n) appliqués en mémoire avant reconstruction.
-/// Vide en v1 : le mécanisme est en place et testé.
+/// Les .kmbackup déjà exportés (v1, KM-008) restent restaurables à jamais.
 final Map<int, Map<String, Object?> Function(Map<String, Object?>)>
-    backupMigrators = {};
+    backupMigrators = {
+  // v1 -> v2 : les DayExtra gagnent vehicleId (attribution figée).
+  // En v1 le champ n'existait pas ; son absence vaut null — rien d'autre
+  // ne change dans l'enveloppe.
+  2: (envelope) => envelope,
+};
 
 /// Contenu VALIDÉ d'une sauvegarde : modèles domaine reconstruits
 /// (invariants revalidés par les constructeurs) + métadonnées d'aperçu.
@@ -263,6 +269,9 @@ BackupContent decodeBackup(String raw) {
   ];
   checkNoDuplicates(
       dayExtras.map((e) => e.date.toIso8601()), 'dayExtras');
+  for (final extra in dayExtras) {
+    checkVehicleRef(extra.vehicleId, 'dayExtras');
+  }
 
   final favorites = [
     for (final map in section('favoriteTrips'))

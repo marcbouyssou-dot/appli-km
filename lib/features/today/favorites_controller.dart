@@ -23,6 +23,7 @@ class FavoritesController extends AsyncNotifier<List<FavoriteTrip>> {
     String? origin,
     String? destination,
     String? purpose,
+    String? vehicleId,
   }) async {
     final favorites = await future;
     final favorite = FavoriteTrip(
@@ -33,6 +34,7 @@ class FavoritesController extends AsyncNotifier<List<FavoriteTrip>> {
       origin: origin,
       destination: destination,
       purpose: purpose,
+      vehicleId: vehicleId,
       sortOrder: favorites.length,
     );
     await ref.read(favoriteTripRepositoryProvider).put(favorite);
@@ -49,6 +51,7 @@ class FavoritesController extends AsyncNotifier<List<FavoriteTrip>> {
     String? origin,
     String? destination,
     String? purpose,
+    String? vehicleId,
   }) async {
     final updated = FavoriteTrip(
       id: original.id,
@@ -58,6 +61,7 @@ class FavoritesController extends AsyncNotifier<List<FavoriteTrip>> {
       origin: origin,
       destination: destination,
       purpose: purpose,
+      vehicleId: vehicleId,
       sortOrder: original.sortOrder,
     );
     await ref.read(favoriteTripRepositoryProvider).put(updated);

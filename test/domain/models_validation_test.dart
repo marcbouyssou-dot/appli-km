@@ -55,6 +55,15 @@ void main() {
       );
     });
 
+    test('vehicleId nullable, nettoyé (attribution figée)', () {
+      final withVehicle =
+          DayExtra(date: day, extraKm: 33, vehicleId: '  peugeot  ');
+      expect(withVehicle.vehicleId, 'peugeot');
+      expect(DayExtra(date: day, extraKm: 33).vehicleId, isNull);
+      expect(DayExtra(date: day, extraKm: 33, vehicleId: '  ').vehicleId,
+          isNull);
+    });
+
     test('0 = absence logique', () {
       expect(DayExtra(date: day, extraKm: 0).isNone, isTrue);
       expect(DayExtra(date: day, extraKm: 5).isNone, isFalse);

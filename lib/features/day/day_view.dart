@@ -7,9 +7,11 @@ import '../../domain/models/trip.dart';
 import '../../domain/models/vacation_period.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
+import '../../domain/models/vehicle.dart';
 import '../today/favorites_section.dart';
 import '../vacations/vacation_guard.dart';
 import '../vacations/vacations_controller.dart';
+import '../vehicles/vehicles_controller.dart';
 import 'day_controller.dart';
 import 'editable_day_total.dart';
 import 'trip_form_sheet.dart';
@@ -90,6 +92,14 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
+/// Choix de véhicule retourné par le dialogue (permet de distinguer
+/// « Aucun véhicule » (null choisi) de l'annulation du dialogue).
+class _VehicleChoice {
+  const _VehicleChoice(this.vehicleId);
+
+  final String? vehicleId;
+}
+
 class _DayContent extends ConsumerWidget {
   const _DayContent({
     required this.day,
@@ -104,11 +114,28 @@ class _DayContent extends ConsumerWidget {
   DayController _controller(WidgetRef ref) =>
       ref.read(dayControllerProvider(day.date).notifier);
 
+  /// Options véhicule pour un formulaire : actifs + le véhicule historique
+  /// du trajet édité (même archivé, pour ne jamais le perdre à l'édition).
+  List<Vehicle> _vehicleOptions(VehiclesState? vehicles, Trip? editing) {
+    final options = [...?vehicles?.active];
+    final historical = vehicles?.byId(editing?.vehicleId);
+    if (historical != null && historical.isArchived) {
+      options.add(historical);
+    }
+    return options;
+  }
+
   Future<void> _addTrip(BuildContext context, WidgetRef ref) async {
     // Jamais congé + kilomètres : confirmation puis retrait du jour.
     if (!await ensureDayNotVacation(context, ref, day.date)) return;
     if (!context.mounted) return;
-    final result = await showTripFormSheet(context);
+    final vehicles = ref.read(vehiclesControllerProvider).value;
+    final result = await showTripFormSheet(
+      context,
+      vehicles: _vehicleOptions(vehicles, null),
+      // Pré-sélection : véhicule principal ACTUEL (figé dans le Trip).
+      defaultVehicleId: vehicles?.mainVehicleId,
+    );
     if (result == null) return;
     await _controller(ref).addTrip(
       distanceKm: result.distanceKm,
@@ -116,6 +143,7 @@ class _DayContent extends ConsumerWidget {
       origin: result.origin,
       destination: result.destination,
       purpose: result.purpose,
+      vehicleId: result.vehicleId,
     );
   }
 
@@ -124,7 +152,12 @@ class _DayContent extends ConsumerWidget {
     WidgetRef ref,
     Trip trip,
   ) async {
-    final result = await showTripFormSheet(context, initial: trip);
+    final vehicles = ref.read(vehiclesControllerProvider).value;
+    final result = await showTripFormSheet(
+      context,
+      initial: trip,
+      vehicles: _vehicleOptions(vehicles, trip),
+    );
     if (result == null) return;
     await _controller(ref).updateTrip(
       trip,
@@ -133,7 +166,51 @@ class _DayContent extends ConsumerWidget {
       origin: result.origin,
       destination: result.destination,
       purpose: result.purpose,
+      vehicleId: result.vehicleId,
     );
+  }
+
+  /// Correction explicite du véhicule des kilomètres non détaillés :
+  /// uniquement l'attribution, jamais le kilométrage.
+  Future<void> _editExtraVehicle(BuildContext context, WidgetRef ref) async {
+    final vehicles = ref.read(vehiclesControllerProvider).value;
+    final extra = day.extra;
+    if (extra == null) return;
+
+    final options = [...?vehicles?.active];
+    final current = vehicles?.byId(extra.vehicleId);
+    if (current != null && current.isArchived) options.add(current);
+
+    final choice = await showDialog<_VehicleChoice>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Véhicule des kilomètres non détaillés'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () =>
+                Navigator.of(context).pop(const _VehicleChoice(null)),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.m),
+              child: Text('Aucun véhicule'),
+            ),
+          ),
+          for (final vehicle in options)
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(_VehicleChoice(vehicle.id)),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: AppSpacing.m),
+                child: Text(vehicle.isArchived
+                    ? '${vehicle.name} (archivé)'
+                    : vehicle.name),
+              ),
+            ),
+        ],
+      ),
+    );
+    if (choice == null) return;
+    await _controller(ref).setDayExtraVehicle(choice.vehicleId);
   }
 
   Future<void> _deleteTrip(
@@ -235,6 +312,13 @@ class _DayContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final vehicles = ref.watch(vehiclesControllerProvider).value;
+
+    String? vehicleName(String? vehicleId) {
+      final vehicle = vehicles?.byId(vehicleId);
+      if (vehicle == null) return null;
+      return vehicle.isArchived ? '${vehicle.name} (archivé)' : vehicle.name;
+    }
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
@@ -340,7 +424,7 @@ class _DayContent extends ConsumerWidget {
                         ],
                       ],
                     ),
-                    subtitle: _tripSubtitle(trip),
+                    subtitle: _tripSubtitle(trip, vehicleName),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline),
                       tooltip: 'Supprimer',
@@ -358,6 +442,10 @@ class _DayContent extends ConsumerWidget {
           const SizedBox(height: AppSpacing.s),
           Card(
             child: ListTile(
+              key: const Key('day-extra-tile'),
+              // Correction explicite de l'attribution véhicule (jamais le
+              // kilométrage).
+              onTap: () => _editExtraVehicle(context, ref),
               minTileHeight: AppSizes.minTouchTarget + 8,
               title: Text(
                 formatKm(day.extraKm),
@@ -365,10 +453,12 @@ class _DayContent extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              subtitle: const Text(
-                'Kilomètres non détaillés — s’ajustent en modifiant '
+              subtitle: Text(
+                '${vehicleName(day.extra!.vehicleId) ?? 'Véhicule non renseigné'}'
+                '\nKilomètres non détaillés — s’ajustent en modifiant '
                 'le total du jour.',
               ),
+              trailing: const Icon(Icons.edit_outlined),
             ),
           ),
         ],
@@ -421,10 +511,13 @@ class _DayContent extends ConsumerWidget {
     );
   }
 
-  Widget? _tripSubtitle(Trip trip) {
+  Widget? _tripSubtitle(Trip trip, String? Function(String?) vehicleName) {
+    final name = vehicleName(trip.vehicleId);
     final parts = [
       [trip.origin, trip.destination].whereType<String>().join(' → '),
       if (trip.purpose != null) trip.purpose!,
+      // Affichage discret du véhicule attribué (figé à la saisie).
+      ?name,
     ].where((part) => part.isNotEmpty).join(' · ');
     return parts.isEmpty ? null : Text(parts);
   }

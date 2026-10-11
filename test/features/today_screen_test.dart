@@ -13,7 +13,9 @@ import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
 import 'package:mes_km/domain/models/favorite_trip.dart';
 import 'package:mes_km/domain/models/trip.dart';
+import 'package:mes_km/domain/models/vehicle.dart';
 import 'package:mes_km/features/day/editable_day_total.dart';
+import 'package:mes_km/features/vehicles/vehicles_controller.dart';
 import 'package:sembast/sembast_memory.dart';
 
 void main() {
@@ -810,6 +812,105 @@ void main() {
       expectTotal(tester, '57');
       expect(find.text('24 km'), findsOneWidget);
       expect(find.text('33 km'), findsOneWidget);
+    });
+  });
+
+  group('véhicules dans la journée (KM-009)', () {
+    Future<String> seedVehicle(WidgetTester tester, String name,
+        {bool main = false}) async {
+      return (await tester.runAsync(() async {
+        final container = ProviderContainer(
+            overrides: [databaseProvider.overrideWithValue(database)]);
+        try {
+          await container
+              .read(vehiclesControllerProvider.notifier)
+              .create(name: name, category: VehicleCategory.car);
+          final s =
+              await container.read(vehiclesControllerProvider.future);
+          final id = s.vehicles.firstWhere((v) => v.name == name).id;
+          if (main) {
+            await container
+                .read(vehiclesControllerProvider.notifier)
+                .setMain(id);
+          }
+          return id;
+        } finally {
+          container.dispose();
+        }
+      }))!;
+    }
+
+    testWidgets(
+        'formulaire Trip : principal pré-sélectionné, autre choix possible, '
+        'véhicule affiché sur la ligne', (tester) async {
+      await seedVehicle(tester, 'Peugeot 3008');
+      await seedVehicle(tester, 'Renault Clio');
+      await pumpApp(tester);
+
+      await tester.tap(find.text('Ajouter un trajet'));
+      await tester.pumpAndSettle();
+
+      // Pré-sélection = principal actuel (Peugeot, premier créé).
+      expect(find.byKey(const Key('trip-vehicle-field')), findsOneWidget);
+      expect(find.text('Peugeot 3008'), findsOneWidget);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
+        '24',
+      );
+      // Choisir explicitement Renault.
+      await tester.tap(find.byKey(const Key('trip-vehicle-field')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Renault Clio').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ajouter'));
+      await tester.pumpAndSettle();
+
+      // Ligne du trajet : véhicule affiché discrètement.
+      expect(find.text('Renault Clio'), findsOneWidget);
+      final trip = (await tester.runAsync(
+              () => SembastTripRepository(database.db).getByDate(day)))!
+          .single;
+      expect(trip.vehicleId, isNotNull);
+    });
+
+    testWidgets(
+        'Autres kilomètres : véhicule principal figé affiché, correction '
+        'manuelle via la ligne', (tester) async {
+      await seedVehicle(tester, 'Peugeot 3008');
+      await seedVehicle(tester, 'Renault Clio');
+      await pumpApp(tester);
+
+      await editTotal(tester, '33');
+      expect(find.text('Autres kilomètres'), findsOneWidget);
+      expect(find.textContaining('Peugeot 3008'), findsOneWidget);
+
+      // Correction : tap sur la ligne -> choix Renault.
+      await tester.tap(find.byKey(const Key('day-extra-tile')));
+      await tester.pumpAndSettle();
+      expect(find.text('Véhicule des kilomètres non détaillés'),
+          findsOneWidget);
+      await tester.tap(find.text('Renault Clio').last);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Renault Clio'), findsOneWidget);
+      expectTotal(tester, '33'); // jamais le kilométrage
+      final extra = await tester.runAsync(
+          () => SembastDayExtraRepository(database.db).getForDate(day));
+      expect(extra?.extraKm, 33);
+    });
+
+    testWidgets('formulaire favori : « Véhicule par défaut » présent',
+        (tester) async {
+      await seedVehicle(tester, 'Peugeot 3008');
+      await pumpApp(tester);
+
+      await tester.tap(find.text('Créer un trajet favori'));
+      await tester.pumpAndSettle();
+
+      expect(
+          find.byKey(const Key('favorite-vehicle-field')), findsOneWidget);
+      expect(find.text('Automatique (véhicule principal)'), findsOneWidget);
     });
   });
 

@@ -7,6 +7,7 @@ import '../../widgets/km_format.dart';
 import '../../domain/models/civil_date.dart';
 import '../day/day_controller.dart';
 import '../vacations/vacation_guard.dart';
+import '../vehicles/vehicles_controller.dart';
 import 'favorite_form_sheet.dart';
 import 'favorites_controller.dart';
 import 'manage_favorites_screen.dart';
@@ -33,16 +34,21 @@ class FavoritesSection extends ConsumerWidget {
     // Jamais congé + kilomètres : confirmation puis retrait du jour.
     if (!await ensureDayNotVacation(context, ref, date)) return;
     if (!context.mounted) return;
-    await ref
+    final archivedFallback = await ref
         .read(dayControllerProvider(date).notifier)
         .addTripFromFavorite(favorite);
     if (!context.mounted) return;
     // Feedback bref, remplacé au tap suivant : n'empile jamais.
+    // Si le favori référençait un véhicule archivé, le principal a été
+    // utilisé — on le dit (favori à corriger).
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(SnackBar(
-        content: Text('+ ${formatKm(favorite.distanceKm)}'),
-        duration: const Duration(milliseconds: 800),
+        content: Text(archivedFallback
+            ? '+ ${formatKm(favorite.distanceKm)} — véhicule principal '
+                'utilisé (le véhicule du favori est archivé)'
+            : '+ ${formatKm(favorite.distanceKm)}'),
+        duration: Duration(milliseconds: archivedFallback ? 3500 : 800),
         behavior: SnackBarBehavior.floating,
       ));
   }
@@ -58,7 +64,9 @@ class FavoritesSection extends ConsumerWidget {
   }
 
   Future<void> _createFavorite(BuildContext context, WidgetRef ref) async {
-    final result = await showFavoriteFormSheet(context);
+    final vehicles =
+        ref.read(vehiclesControllerProvider).value?.active ?? const [];
+    final result = await showFavoriteFormSheet(context, vehicles: vehicles);
     if (result == null) return;
     await ref.read(favoritesControllerProvider.notifier).create(
           label: result.label,
@@ -67,6 +75,7 @@ class FavoritesSection extends ConsumerWidget {
           origin: result.origin,
           destination: result.destination,
           purpose: result.purpose,
+          vehicleId: result.vehicleId,
         );
   }
 

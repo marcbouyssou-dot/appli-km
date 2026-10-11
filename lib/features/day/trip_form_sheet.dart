@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/trip.dart';
+import '../../domain/models/vehicle.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 
@@ -12,6 +13,7 @@ class TripFormResult {
     this.origin,
     this.destination,
     this.purpose,
+    this.vehicleId,
   });
 
   final double distanceKm;
@@ -19,28 +21,45 @@ class TripFormResult {
   final String? origin;
   final String? destination;
   final String? purpose;
+  final String? vehicleId;
 }
 
 /// Feuille d'ajout/modification d'un trajet.
 /// Sémantique assumée : l'utilisateur saisit la DISTANCE COMPTABILISÉE
 /// (le total réellement parcouru, A/R inclus) ; le toggle aller-retour est
 /// purement descriptif et ne double jamais la distance.
+/// [vehicles] : options proposées (actifs + véhicule historique du trajet
+/// même archivé, fourni par l'appelant). [defaultVehicleId] : pré-sélection
+/// à la création (véhicule principal actuel) ; en édition, le véhicule
+/// HISTORIQUE du trajet est affiché — jamais le principal du moment.
 Future<TripFormResult?> showTripFormSheet(
   BuildContext context, {
   Trip? initial,
+  List<Vehicle> vehicles = const [],
+  String? defaultVehicleId,
 }) {
   return showModalBottomSheet<TripFormResult>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (context) => _TripFormSheet(initial: initial),
+    builder: (context) => _TripFormSheet(
+      initial: initial,
+      vehicles: vehicles,
+      defaultVehicleId: defaultVehicleId,
+    ),
   );
 }
 
 class _TripFormSheet extends StatefulWidget {
-  const _TripFormSheet({this.initial});
+  const _TripFormSheet({
+    this.initial,
+    this.vehicles = const [],
+    this.defaultVehicleId,
+  });
 
   final Trip? initial;
+  final List<Vehicle> vehicles;
+  final String? defaultVehicleId;
 
   @override
   State<_TripFormSheet> createState() => _TripFormSheetState();
@@ -52,12 +71,15 @@ class _TripFormSheetState extends State<_TripFormSheet> {
   late final TextEditingController _destinationController;
   late final TextEditingController _purposeController;
   late bool _isRoundTrip;
+  String? _vehicleId;
   String? _distanceError;
 
   @override
   void initState() {
     super.initState();
     final initial = widget.initial;
+    _vehicleId =
+        initial != null ? initial.vehicleId : widget.defaultVehicleId;
     _distanceController = TextEditingController(
       text: initial == null
           ? ''
@@ -94,6 +116,7 @@ class _TripFormSheetState extends State<_TripFormSheet> {
       origin: _originController.text,
       destination: _destinationController.text,
       purpose: _purposeController.text,
+      vehicleId: _vehicleId,
     ));
   }
 
@@ -169,6 +192,32 @@ class _TripFormSheetState extends State<_TripFormSheet> {
                 border: OutlineInputBorder(),
               ),
             ),
+            if (widget.vehicles.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.m),
+              DropdownButtonFormField<String?>(
+                key: const Key('trip-vehicle-field'),
+                isExpanded: true,
+                initialValue: _vehicleId,
+                decoration: const InputDecoration(
+                  labelText: 'Véhicule',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Aucun véhicule'),
+                  ),
+                  for (final vehicle in widget.vehicles)
+                    DropdownMenuItem<String?>(
+                      value: vehicle.id,
+                      child: Text(vehicle.isArchived
+                          ? '${vehicle.name} (archivé)'
+                          : vehicle.name),
+                    ),
+                ],
+                onChanged: (value) => setState(() => _vehicleId = value),
+              ),
+            ],
             const SizedBox(height: AppSpacing.l),
             FilledButton(
               onPressed: _submit,

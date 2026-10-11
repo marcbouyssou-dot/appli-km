@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/favorite_trip.dart';
+import '../../domain/models/vehicle.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 
@@ -13,6 +14,7 @@ class FavoriteFormResult {
     this.origin,
     this.destination,
     this.purpose,
+    this.vehicleId,
   });
 
   final String label;
@@ -21,6 +23,9 @@ class FavoriteFormResult {
   final String? origin;
   final String? destination;
   final String? purpose;
+
+  /// Véhicule par défaut : null = « Automatique » (principal résolu au tap).
+  final String? vehicleId;
 }
 
 /// Feuille de création/modification d'un favori.
@@ -33,6 +38,7 @@ class FavoriteFormResult {
 Future<FavoriteFormResult?> showFavoriteFormSheet(
   BuildContext context, {
   FavoriteTrip? initial,
+  List<Vehicle> vehicles = const [],
   Future<bool> Function()? onDeleteRequested,
 }) {
   return showModalBottomSheet<FavoriteFormResult>(
@@ -41,15 +47,21 @@ Future<FavoriteFormResult?> showFavoriteFormSheet(
     showDragHandle: true,
     builder: (context) => _FavoriteFormSheet(
       initial: initial,
+      vehicles: vehicles,
       onDeleteRequested: onDeleteRequested,
     ),
   );
 }
 
 class _FavoriteFormSheet extends StatefulWidget {
-  const _FavoriteFormSheet({this.initial, this.onDeleteRequested});
+  const _FavoriteFormSheet({
+    this.initial,
+    this.vehicles = const [],
+    this.onDeleteRequested,
+  });
 
   final FavoriteTrip? initial;
+  final List<Vehicle> vehicles;
   final Future<bool> Function()? onDeleteRequested;
 
   @override
@@ -63,6 +75,7 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
   late final TextEditingController _destinationController;
   late final TextEditingController _purposeController;
   late bool _defaultRoundTrip;
+  String? _vehicleId;
   String? _labelError;
   String? _distanceError;
 
@@ -70,6 +83,13 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
   void initState() {
     super.initState();
     final initial = widget.initial;
+    _vehicleId = initial?.vehicleId;
+    // Véhicule archivé référencé : on revient à « Automatique » et
+    // l'utilisateur corrige explicitement (jamais de Trip archivé caché).
+    if (_vehicleId != null &&
+        !widget.vehicles.any((v) => v.id == _vehicleId && !v.isArchived)) {
+      _vehicleId = null;
+    }
     _labelController = TextEditingController(text: initial?.label ?? '');
     _distanceController = TextEditingController(
       text: initial == null ? '' : formatKmValue(initial.distanceKm),
@@ -110,6 +130,7 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
       origin: _originController.text,
       destination: _destinationController.text,
       purpose: _purposeController.text,
+      vehicleId: _vehicleId,
     ));
   }
 
@@ -204,6 +225,31 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
                 border: OutlineInputBorder(),
               ),
             ),
+            if (widget.vehicles.any((v) => !v.isArchived)) ...[
+              const SizedBox(height: AppSpacing.m),
+              DropdownButtonFormField<String?>(
+                key: const Key('favorite-vehicle-field'),
+                isExpanded: true,
+                initialValue: _vehicleId,
+                decoration: const InputDecoration(
+                  labelText: 'Véhicule par défaut',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Automatique (véhicule principal)'),
+                  ),
+                  for (final vehicle in widget.vehicles)
+                    if (!vehicle.isArchived)
+                      DropdownMenuItem<String?>(
+                        value: vehicle.id,
+                        child: Text(vehicle.name),
+                      ),
+                ],
+                onChanged: (value) => setState(() => _vehicleId = value),
+              ),
+            ],
             const SizedBox(height: AppSpacing.l),
             FilledButton(
               onPressed: _submit,

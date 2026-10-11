@@ -1,0 +1,237 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../domain/models/vehicle.dart';
+import '../../theme/tokens.dart';
+import 'vehicle_form_sheet.dart';
+import 'vehicles_controller.dart';
+
+/// Gestion des véhicules : liste, principal, archivage/réactivation.
+/// Grandes zones tactiles, actions textuelles explicites — pas de « … ».
+class VehiclesScreen extends ConsumerWidget {
+  const VehiclesScreen({super.key});
+
+  Future<void> _create(BuildContext context, WidgetRef ref) async {
+    final result = await showVehicleFormSheet(context);
+    if (result == null) return;
+    await ref.read(vehiclesControllerProvider.notifier).create(
+          name: result.name,
+          category: result.category,
+          fiscalPowerCv: result.fiscalPowerCv,
+          registration: result.registration,
+        );
+  }
+
+  Future<void> _edit(
+      BuildContext context, WidgetRef ref, Vehicle vehicle) async {
+    final result = await showVehicleFormSheet(context, initial: vehicle);
+    if (result == null) return;
+    await ref.read(vehiclesControllerProvider.notifier).updateVehicle(
+          vehicle,
+          name: result.name,
+          category: result.category,
+          fiscalPowerCv: result.fiscalPowerCv,
+          registration: result.registration,
+        );
+  }
+
+  Future<void> _archive(
+      BuildContext context, WidgetRef ref, Vehicle vehicle) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Archiver ce véhicule ?'),
+        content: Text(
+          '${vehicle.name}\n\n'
+          'Il ne sera plus proposé pour les nouvelles saisies, mais les '
+          'kilomètres déjà enregistrés lui restent attribués.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Archiver'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref
+          .read(vehiclesControllerProvider.notifier)
+          .archive(vehicle.id);
+    }
+  }
+
+  String _subtitle(Vehicle vehicle) {
+    final parts = [
+      vehicle.category == VehicleCategory.car ? 'Voiture' : 'Deux-roues',
+      if (vehicle.fiscalPowerCv != null) '${vehicle.fiscalPowerCv} CV',
+      if (vehicle.registration != null) vehicle.registration!,
+    ];
+    return parts.join(' · ');
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final state = ref.watch(vehiclesControllerProvider).value;
+    final active = state?.active ?? const <Vehicle>[];
+    final archived = state?.archived ?? const <Vehicle>[];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Véhicules')),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.l),
+          children: [
+            if (active.isEmpty && archived.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Text(
+                  'Aucun véhicule pour le moment.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            for (final vehicle in active)
+              Card(
+                margin: const EdgeInsets.only(bottom: AppSpacing.m),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ListTile(
+                      key: Key('vehicle-${vehicle.id}'),
+                      onTap: () => _edit(context, ref, vehicle),
+                      minTileHeight: AppSizes.minTouchTarget + 8,
+                      title: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              vehicle.name,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (state?.isMain(vehicle.id) ?? false) ...[
+                            const SizedBox(width: AppSpacing.s),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.s,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.m),
+                              ),
+                              child: Text(
+                                'Principal',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color:
+                                      theme.colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      subtitle: Text(_subtitle(vehicle)),
+                      trailing: const Icon(Icons.edit_outlined),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: AppSpacing.s,
+                        right: AppSpacing.s,
+                        bottom: AppSpacing.s,
+                      ),
+                      child: Row(
+                        children: [
+                          if (!(state?.isMain(vehicle.id) ?? false))
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton(
+                                  key: Key('set-main-${vehicle.id}'),
+                                  onPressed: () => ref
+                                      .read(vehiclesControllerProvider
+                                          .notifier)
+                                      .setMain(vehicle.id),
+                                  style: TextButton.styleFrom(
+                                    minimumSize: const Size(
+                                        0, AppSizes.minTouchTarget),
+                                  ),
+                                  child: const Text(
+                                    'Définir comme véhicule principal',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            const Spacer(),
+                          TextButton(
+                            key: Key('archive-${vehicle.id}'),
+                            onPressed: () =>
+                                _archive(context, ref, vehicle),
+                            style: TextButton.styleFrom(
+                              foregroundColor:
+                                  theme.colorScheme.onSurfaceVariant,
+                              minimumSize:
+                                  const Size(0, AppSizes.minTouchTarget),
+                            ),
+                            child: const Text('Archiver'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: AppSpacing.s),
+            FilledButton.tonalIcon(
+              key: const Key('add-vehicle-button'),
+              onPressed: () => _create(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('Ajouter un véhicule'),
+              style: FilledButton.styleFrom(
+                minimumSize:
+                    const Size.fromHeight(AppSizes.minTouchTarget + 8),
+              ),
+            ),
+            if (archived.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.xl),
+              Text('Véhicules archivés', style: theme.textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.s),
+              for (final vehicle in archived)
+                ListTile(
+                  key: Key('archived-${vehicle.id}'),
+                  minTileHeight: AppSizes.minTouchTarget,
+                  leading: Icon(
+                    Icons.inventory_2_outlined,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  title: Text(vehicle.name),
+                  subtitle: Text(_subtitle(vehicle)),
+                  trailing: TextButton(
+                    key: Key('unarchive-${vehicle.id}'),
+                    onPressed: () => ref
+                        .read(vehiclesControllerProvider.notifier)
+                        .unarchive(vehicle.id),
+                    child: const Text('Réactiver'),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

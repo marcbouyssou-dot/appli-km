@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/favorite_trip.dart';
+import '../../domain/models/vehicle.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
+import '../vehicles/vehicles_controller.dart';
 import 'favorite_form_sheet.dart';
 import 'favorites_controller.dart';
 
@@ -30,8 +32,12 @@ class _ManageFavoritesScreenState
     extends ConsumerState<ManageFavoritesScreen> {
   bool _autoOpenHandled = false;
 
+  List<Vehicle> _activeVehicles() =>
+      ref.read(vehiclesControllerProvider).value?.active ?? const [];
+
   Future<void> _create() async {
-    final result = await showFavoriteFormSheet(context);
+    final result =
+        await showFavoriteFormSheet(context, vehicles: _activeVehicles());
     if (result == null) return;
     await ref.read(favoritesControllerProvider.notifier).create(
           label: result.label,
@@ -40,6 +46,7 @@ class _ManageFavoritesScreenState
           origin: result.origin,
           destination: result.destination,
           purpose: result.purpose,
+          vehicleId: result.vehicleId,
         );
   }
 
@@ -47,6 +54,7 @@ class _ManageFavoritesScreenState
     final result = await showFavoriteFormSheet(
       context,
       initial: favorite,
+      vehicles: _activeVehicles(),
       onDeleteRequested: () => _delete(favorite),
     );
     if (result == null) return;
@@ -58,6 +66,7 @@ class _ManageFavoritesScreenState
           origin: result.origin,
           destination: result.destination,
           purpose: result.purpose,
+          vehicleId: result.vehicleId,
         );
   }
 
