@@ -129,70 +129,84 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // UX-001B : le chiffre est le HÉROS — encre presque noire, sans carte.
+    // Le bleu est réservé à l'affordance d'édition (pictogramme crayon).
     final valueStyle = theme.textTheme.displayLarge?.copyWith(
       fontWeight: FontWeight.w800,
-      color: theme.colorScheme.primary,
+      color: theme.colorScheme.onSurface,
     );
 
-    // TOUTE la carte est tactile : pas besoin de viser les chiffres.
-    return Card(
+    // TOUTE la zone reste tactile (comportement compteur validé inchangé) :
+    // tap → édition immédiate, pas de curseur, pas de sélection.
+    return InkWell(
       key: dayTotalCardKey,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: _activateEditing,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.xxl,
-            horizontal: AppSpacing.xl,
-          ),
-          child: Column(
-            children: [
-              TextField(
-                key: dayTotalFieldKey,
-                controller: _controller,
-                focusNode: _focusNode,
-                textAlign: TextAlign.center,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _focusNode.unfocus(),
-                // Aspect compteur : pas de sélection interactive (donc pas
-                // de poignées ni de surlignage), pas de suggestions.
-                enableInteractiveSelection: false,
-                autocorrect: false,
-                enableSuggestions: false,
-                // Compteur : pas de curseur clignotant (la frappe reste
-                // visible, le contrôle reste un vrai champ accessible).
-                showCursor: false,
-                style: valueStyle,
-                decoration: InputDecoration(
-                  isCollapsed: true,
-                  border: InputBorder.none,
-                  // Pendant l'édition (champ vidé), l'ancienne valeur reste
-                  // affichée en filigrane, même taille, même place.
-                  hintText: formatKmValue(widget.totalKm),
-                  hintStyle: valueStyle?.copyWith(
-                    color: theme.colorScheme.primary
-                        .withValues(alpha: 0.30),
+      onTap: _activateEditing,
+      borderRadius: BorderRadius.circular(AppRadius.m),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.xl,
+          horizontal: AppSpacing.xl,
+        ),
+        child: Column(
+          children: [
+            TextField(
+              key: dayTotalFieldKey,
+              controller: _controller,
+              focusNode: _focusNode,
+              textAlign: TextAlign.center,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _focusNode.unfocus(),
+              // Aspect compteur : pas de sélection interactive (donc pas
+              // de poignées ni de surlignage), pas de suggestions.
+              enableInteractiveSelection: false,
+              autocorrect: false,
+              enableSuggestions: false,
+              // Compteur : pas de curseur clignotant (la frappe reste
+              // visible, le contrôle reste un vrai champ accessible).
+              showCursor: false,
+              style: valueStyle,
+              decoration: InputDecoration(
+                isCollapsed: true,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                // Pendant l'édition (champ vidé), l'ancienne valeur reste
+                // affichée en filigrane, même taille, même place.
+                hintText: formatKmValue(widget.totalKm),
+                hintStyle: valueStyle?.copyWith(
+                  color:
+                      theme.colorScheme.onSurface.withValues(alpha: 0.25),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    'km aujourd’hui',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              Text(
-                'km aujourd’hui',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                const SizedBox(width: AppSpacing.s),
+                // Affordance discrète mais explicite : crayon bleu.
+                Icon(
+                  Icons.edit_outlined,
+                  size: 17,
+                  color: theme.colorScheme.primary,
                 ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              Text(
-                'Touchez la carte pour modifier le total',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );

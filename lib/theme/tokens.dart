@@ -33,7 +33,7 @@ abstract final class AppPalette {
   static const Color vacationContainer = Color(0xFFD3ECEA);
   static const Color onVacationContainer = Color(0xFF0E3B3A);
 
-  static const Color background = Color(0xFFF4F6FB); // gris-bleu très léger
+  static const Color background = Color(0xFFFBFCFE); // quasi blanc, très légèrement bleuté
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceAlt = Color(0xFFEAEEF6);
   static const Color outline = Color(0xFF6E7684);

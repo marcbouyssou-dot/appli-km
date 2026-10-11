@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/logic/fiscal_estimator.dart';
 import '../../domain/models/vehicle.dart';
+import '../../theme/app_typography.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/grouped_list.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/period_selector.dart';
 import '../../widgets/placeholder_card.dart';
@@ -90,105 +90,105 @@ class _StatisticsView extends ConsumerWidget {
             ),
           ),
 
-        // TOTAL ANNÉE — le chiffre le plus important, en grand.
-        const SectionHeader('TOTAL ANNÉE'),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: AppSpacing.xl,
-              horizontal: AppSpacing.xl,
+        // HÉROS (UX-001B) : le total annuel vit directement dans la page.
+        // Encre presque noire — le bleu est réservé aux accents.
+        const SizedBox(height: AppSpacing.l),
+        Text(
+          formatKmGrouped(stats.yearTotal),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.displayLarge?.copyWith(
+            fontSize: 44,
+            fontWeight: FontWeight.w800,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Center(
+          child: Text(
+            'TOTAL ANNÉE',
+            style: AppTypography.sectionTitle.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            child: Column(
-              children: [
-                Text(
-                  formatKmGrouped(stats.yearTotal),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                if (delta != null) ...[
-                  const SizedBox(height: AppSpacing.s),
+          ),
+        ),
+        if (delta != null) ...[
+          const SizedBox(height: AppSpacing.s),
+          Text(
+            'vs ${stats.year - 1} : '
+            '${formatKmGrouped(stats.previousYearTotal!)} · '
+            '${delta >= 0 ? '+' : '−'}'
+            '${formatKmGrouped(delta.abs())}'
+            '${percent == null ? '' : ' (${_percentText(percent)})'}',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+
+        // Mois sélectionné : même langage, directement dans la page.
+        const SizedBox(height: AppSpacing.xl),
+        Row(
+          children: [
+            IconButton(
+              key: const Key('stats-prev-month'),
+              onPressed: controller.previousMonth,
+              icon: const Icon(Icons.chevron_left),
+              tooltip: 'Mois précédent',
+            ),
+            Expanded(
+              child: Column(
+                children: [
                   Text(
-                    'vs ${stats.year - 1} : '
-                    '${formatKmGrouped(stats.previousYearTotal!)} · '
-                    '${delta >= 0 ? '+' : '−'}'
-                    '${formatKmGrouped(delta.abs())}'
-                    '${percent == null ? '' : ' (${_percentText(percent)})'}',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    _StatisticsScreenNames
+                        .monthLabel(stats.month, stats.year),
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
-        ),
-
-        // Mois sélectionné (indépendant du calendrier principal).
-        const SectionHeader('MOIS'),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
-            child: Row(
-              children: [
-                IconButton(
-                  key: const Key('stats-prev-month'),
-                  onPressed: controller.previousMonth,
-                  icon: const Icon(Icons.chevron_left),
-                  tooltip: 'Mois précédent',
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        _StatisticsScreenNames
-                            .monthLabel(stats.month, stats.year),
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      Text(
-                        formatKmGrouped(stats.selectedMonthTotal),
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    formatKmGrouped(stats.selectedMonthTotal),
+                    style: AppTypography.value.copyWith(
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
-                ),
-                IconButton(
-                  key: const Key('stats-next-month'),
-                  onPressed: controller.nextMonth,
-                  icon: const Icon(Icons.chevron_right),
-                  tooltip: 'Mois suivant',
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            IconButton(
+              key: const Key('stats-next-month'),
+              onPressed: controller.nextMonth,
+              icon: const Icon(Icons.chevron_right),
+              tooltip: 'Mois suivant',
+            ),
+          ],
         ),
 
-        const SizedBox(height: AppSpacing.m),
+        const SizedBox(height: AppSpacing.l),
+        Divider(height: 1, color: theme.colorScheme.outlineVariant),
+        const SizedBox(height: AppSpacing.l),
         Row(
           children: [
             Expanded(
-              child: _SmallStat(
+              child: _InlineStat(
                 label: 'Jours avec km',
                 value: '${stats.activeDays}',
               ),
             ),
-            const SizedBox(width: AppSpacing.m),
             Expanded(
-              child: _SmallStat(
+              child: _InlineStat(
                 label: 'Moyenne / jour actif',
                 value: formatKm(stats.averagePerActiveDay),
               ),
             ),
           ],
         ),
+        const SizedBox(height: AppSpacing.l),
+        Divider(height: 1, color: theme.colorScheme.outlineVariant),
 
         const SectionHeader('ÉVOLUTION MENSUELLE'),
+        // Le graphique garde sa surface : elle a une fonction (zone de
+        // lecture distincte).
         Card(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.l),
@@ -204,18 +204,24 @@ class _StatisticsView extends ConsumerWidget {
                 : 'Aucune attribution de véhicule.',
           )
         else
-          GroupedList(
+          Column(
             children: [
                 for (final stat in stats.vehicleStats)
                   ListTile(
                     key: Key('vehicle-stat-${stat.vehicleId ?? 'none'}'),
+                    contentPadding: EdgeInsets.zero,
+                    shape: Border(
+                      bottom: BorderSide(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                    ),
                     minTileHeight: AppSizes.minTouchTarget + 8,
                     title: Text(
                       stat.isArchived
                           ? '${stat.label} (archivé)'
                           : stat.label,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     subtitle: Text(
@@ -357,11 +363,18 @@ class _FiscalEstimationSection extends ConsumerWidget {
             style: muted,
           ),
         const SizedBox(height: AppSpacing.s),
-        GroupedList(
+        // UX-001B : plus de carte — le montant estimé domine, filets fins.
+        Column(
           children: [
               for (final row in fiscal.rows)
                 ListTile(
                   key: Key('fiscal-row-${row.vehicleId}'),
+                  contentPadding: EdgeInsets.zero,
+                  shape: Border(
+                    bottom: BorderSide(
+                      color: theme.colorScheme.outlineVariant,
+                    ),
+                  ),
                   minTileHeight: AppSizes.minTouchTarget + 8,
                   title: Text(
                     row.isArchived ? '${row.label} (archivé)' : row.label,
@@ -376,12 +389,17 @@ class _FiscalEstimationSection extends ConsumerWidget {
                         Text(_descriptor(row.vehicle!)),
                       Text(formatKmGrouped(row.yearKm)),
                       switch (row.estimate) {
-                        FiscalEstimateAvailable(:final amountEur) => Text(
-                            'Estimation indicative : '
-                            '${formatEurRounded(amountEur)}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                        FiscalEstimateAvailable(:final amountEur) =>
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(top: AppSpacing.xs),
+                            child: Text(
+                              'Estimation indicative : '
+                              '${formatEurRounded(amountEur)}',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         FiscalVehicleIncomplete(:final missing) => Column(
@@ -415,6 +433,7 @@ class _FiscalEstimationSection extends ConsumerWidget {
               if (fiscal.estimatedRows.isNotEmpty) ...[
                 ListTile(
                   key: const Key('fiscal-total'),
+                  contentPadding: EdgeInsets.zero,
                   minTileHeight: AppSizes.minTouchTarget,
                   title: Text(
                     // Jamais un « total » trompeur si estimation partielle.
@@ -422,14 +441,13 @@ class _FiscalEstimationSection extends ConsumerWidget {
                         ? 'Sous-total des véhicules estimables'
                         : 'TOTAL ESTIMÉ',
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   trailing: Text(
                     formatEurRounded(fiscal.estimatedTotal),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.primary,
+                    style: AppTypography.value.copyWith(
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -456,8 +474,9 @@ class _FiscalEstimationSection extends ConsumerWidget {
   }
 }
 
-class _SmallStat extends StatelessWidget {
-  const _SmallStat({required this.label, required this.value});
+/// Statistique secondaire inline (UX-001B) : valeur + libellé, sans carte.
+class _InlineStat extends StatelessWidget {
+  const _InlineStat({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -465,29 +484,23 @@ class _SmallStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.l),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+    return Column(
+      children: [
+        Text(
+          value,
+          style: AppTypography.value.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
         ),
-      ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

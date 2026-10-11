@@ -9,7 +9,6 @@ import '../../domain/models/vacation_period.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/app_buttons.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/grouped_list.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/section_header.dart';
 import '../../domain/models/vehicle.dart';
@@ -382,24 +381,66 @@ class _DayContent extends ConsumerWidget {
         // Favoris : ajout en un toucher, Trip daté de CETTE journée.
         FavoritesSection(date: day.date),
 
-        PrimaryButton(
-          tonal: true,
-          icon: Icons.add,
-          label: 'Ajouter un trajet',
-          onPressed: () => _addTrip(context, ref),
+        // Action signature Mes Km (UX-001B) : pas de grande pilule —
+        // pastille d'icône + libellé, cible pleine largeur >= 56 px.
+        InkWell(
+          onTap: () => _addTrip(context, ref),
+          borderRadius: BorderRadius.circular(AppRadius.s),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: AppSizes.primaryActionHeight,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.add,
+                    size: 19,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.m),
+                Flexible(
+                  child: Text(
+                    'Ajouter un trajet',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.l),
 
         if (day.isEmpty)
           const EmptyState('Aucun kilomètre enregistré ce jour-là.'),
 
         if (day.trips.isNotEmpty) ...[
           const SectionHeader('Trajets détaillés', topSpacing: 0),
-          GroupedList(
+          // Hiérarchie secondaire (UX-001B) : filets fins, pas de carte.
+          Column(
             children: [
                 for (final trip in day.trips)
                   ListTile(
                     onTap: () => _editTrip(context, ref, trip),
+                    contentPadding: EdgeInsets.zero,
+                    shape: Border(
+                      bottom: BorderSide(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                    ),
                     minTileHeight: AppSizes.minTouchTarget + 8,
                     title: Row(
                       children: [
@@ -430,31 +471,34 @@ class _DayContent extends ConsumerWidget {
                   ),
             ],
           ),
-          const SizedBox(height: AppSpacing.l),
+          const SizedBox(height: AppSpacing.m),
         ],
 
         if (day.extra != null) ...[
           const SectionHeader('Autres kilomètres', topSpacing: 0),
-          Card(
-            child: ListTile(
-              key: const Key('day-extra-tile'),
-              // Correction explicite de l'attribution véhicule (jamais le
-              // kilométrage).
-              onTap: () => _editExtraVehicle(context, ref),
-              minTileHeight: AppSizes.minTouchTarget + 8,
-              title: Text(
-                formatKm(day.extraKm),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+          ListTile(
+            key: const Key('day-extra-tile'),
+            // Correction explicite de l'attribution véhicule (jamais le
+            // kilométrage).
+            onTap: () => _editExtraVehicle(context, ref),
+            contentPadding: EdgeInsets.zero,
+            shape: Border(
+              bottom: BorderSide(
+                color: theme.colorScheme.outlineVariant,
               ),
-              subtitle: Text(
-                '${vehicleName(day.extra!.vehicleId) ?? 'Véhicule non renseigné'}'
-                '\nKilomètres non détaillés — s’ajustent en modifiant '
-                'le total du jour.',
-              ),
-              trailing: const Icon(Icons.edit_outlined),
             ),
+            minTileHeight: AppSizes.minTouchTarget + 8,
+            title: Text(
+              formatKm(day.extraKm),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(
+              'Kilomètres non détaillés · '
+              '${vehicleName(day.extra!.vehicleId) ?? 'véhicule non renseigné'}',
+            ),
+            trailing: const Icon(Icons.edit_outlined, size: 20),
           ),
         ],
 

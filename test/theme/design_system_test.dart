@@ -221,6 +221,68 @@ void main() {
     });
   });
 
+  group('identité UX-001B', () {
+    test('Inter est la famille du thème (police embarquée, pas Roboto)', () {
+      expect(AppTheme.light().textTheme.bodyMedium?.fontFamily, 'Inter');
+      expect(AppTheme.dark().textTheme.titleLarge?.fontFamily, 'Inter');
+    });
+
+    test('navigation légère : plus de capsule, sélection par la couleur', () {
+      final nav = AppTheme.light().navigationBarTheme;
+      expect(nav.indicatorColor, Colors.transparent);
+      final selected = nav.labelTextStyle!
+          .resolve({WidgetState.selected})!;
+      expect(selected.color, AppPalette.primary);
+      expect(selected.fontWeight, FontWeight.w700);
+    });
+
+    testWidgets(
+        'compteur héros : plus de carte, zone entièrement tactile, '
+        'pédagogie permanente retirée, affordance crayon présente',
+        (tester) async {
+      final database = await MesKmDatabase.open(newDatabaseFactoryMemory(),
+          name: 'ds3.db');
+      addTearDown(database.close);
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          todayDateProvider.overrideWithValue(() => CivilDate(2026, 10, 12)),
+        ],
+        child: const MesKmApp(),
+      ));
+      await tester.pumpAndSettle();
+
+      final hero = find.byKey(const Key('day-total-card'));
+      expect(hero, findsOneWidget);
+      expect(
+        find.ancestor(of: hero, matching: find.byType(Card)),
+        findsNothing,
+        reason: 'le chiffre vit dans la page, pas dans une carte',
+      );
+      expect(tester.getSize(hero).height,
+          greaterThanOrEqualTo(AppSizes.minTouchTarget));
+      expect(find.text('Touchez la carte pour modifier le total'),
+          findsNothing);
+      expect(
+        find.descendant(
+            of: hero, matching: find.byIcon(Icons.edit_outlined)),
+        findsOneWidget,
+        reason: 'affordance discrète mais explicite',
+      );
+
+      // Le comportement compteur validé est inchangé : tap => édition.
+      await tester.tap(hero);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.byKey(const Key('day-total-field')), '23');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      final field = tester.widget<TextField>(
+          find.byKey(const Key('day-total-field')));
+      expect(field.controller!.text, '23');
+    });
+  });
+
   group('application réelle', () {
     testWidgets(
         'petit iPhone (320x568) : les 4 onglets se construisent sans '

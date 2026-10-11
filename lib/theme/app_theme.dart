@@ -80,7 +80,7 @@ abstract final class AppTheme {
         ? AppPalette.background
         : AppPalette.backgroundDark;
 
-    final base = ThemeData(colorScheme: scheme);
+    final base = ThemeData(colorScheme: scheme, fontFamily: 'Inter');
 
     return base.copyWith(
       extensions: [semantic],
@@ -195,17 +195,29 @@ abstract final class AppTheme {
         ),
       ),
 
-      // Navigation : indicateur discret, libellés nets, cibles inchangées.
+      // Navigation légère (UX-001B) : plus de capsule — la sélection se lit
+      // par la couleur et le poids. Cibles tactiles inchangées.
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        indicatorColor: scheme.primaryContainer,
-        labelTextStyle: WidgetStatePropertyAll(
-          TextStyle(
+        indicatorColor: Colors.transparent,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? scheme.primary
+                : scheme.onSurfaceVariant,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: scheme.onSurfaceVariant,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w600,
+            color: states.contains(WidgetState.selected)
+                ? scheme.primary
+                : scheme.onSurfaceVariant,
           ),
         ),
       ),

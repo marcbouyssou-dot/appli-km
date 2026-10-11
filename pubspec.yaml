@@ -36,3 +36,16 @@ flutter:
   uses-material-design: true
   assets:
     - assets/fiscal/
+  # Inter 4.1 (SIL OFL), sous-ensemble latin/latin-ext + € → (pyftsubset) :
+  # ~66 Ko par graisse au lieu de ~420 Ko. Aucune police distante.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Inter-ExtraBold.ttf
+          weight: 800
