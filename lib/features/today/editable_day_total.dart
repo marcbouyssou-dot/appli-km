@@ -154,9 +154,9 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
                 enableInteractiveSelection: false,
                 autocorrect: false,
                 enableSuggestions: false,
-                cursorColor: theme.colorScheme.primary,
-                cursorWidth: 3,
-                cursorRadius: const Radius.circular(2),
+                // Compteur : pas de curseur clignotant (la frappe reste
+                // visible, le contrôle reste un vrai champ accessible).
+                showCursor: false,
                 style: valueStyle,
                 decoration: InputDecoration(
                   isCollapsed: true,

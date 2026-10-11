@@ -7,6 +7,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/placeholder_card.dart';
 import 'editable_day_total.dart';
+import 'favorites_section.dart';
 import 'today_controller.dart';
 import 'trip_form_sheet.dart';
 
@@ -154,6 +155,9 @@ class _TodayView extends ConsumerWidget {
         // Total du jour, toujours dérivé du domaine, directement éditable.
         EditableDayTotal(totalKm: today.totalKm),
         const SizedBox(height: AppSpacing.l),
+
+        // Favoris : ajout en un seul toucher.
+        const FavoritesSection(),
 
         FilledButton.tonalIcon(
           onPressed: () => _addTrip(context, ref),

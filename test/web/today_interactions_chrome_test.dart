@@ -14,8 +14,11 @@ import 'package:mes_km/app.dart';
 import 'package:mes_km/app/providers.dart';
 import 'package:mes_km/data/local/app_database.dart';
 import 'package:mes_km/data/local/sembast_day_extra_repository.dart';
+import 'package:mes_km/data/local/sembast_favorite_trip_repository.dart';
+import 'package:mes_km/data/local/sembast_trip_repository.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
+import 'package:mes_km/domain/models/favorite_trip.dart';
 import 'package:mes_km/features/today/editable_day_total.dart';
 import 'package:sembast/sembast_memory.dart' hide Finder;
 
@@ -83,5 +86,50 @@ void main() {
     await tester.tap(navLabel('Aujourd’hui'));
     await tester.pumpAndSettle();
     expect(find.text('km aujourd’hui'), findsOneWidget);
+  });
+
+  testWidgets('Web réel : deux taps favori => deux Trips persistés (+48)',
+      (tester) async {
+    final database =
+        await MesKmDatabase.open(newDatabaseFactoryMemory(), name: 'wf.db');
+    addTearDown(database.close);
+
+    await tester.runAsync(
+        () => SembastFavoriteTripRepository(database.db).put(FavoriteTrip(
+              id: 'fav-1',
+              label: 'Cabinet ↔ EHPAD',
+              distanceKm: 24,
+              sortOrder: 0,
+            )));
+
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(database),
+        todayDateProvider.overrideWithValue(() => day),
+      ],
+      child: const MesKmApp(),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('favorite-fav-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('favorite-fav-1')));
+    await tester.pumpAndSettle();
+
+    final totalText = tester
+        .widget<TextField>(find.byKey(dayTotalFieldKey))
+        .controller!
+        .text;
+    expect(totalText, '48');
+    final trips = await tester
+        .runAsync(() => SembastTripRepository(database.db).getByDate(day));
+    expect(trips, hasLength(2));
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
   });
 }

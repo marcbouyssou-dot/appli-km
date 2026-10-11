@@ -6,10 +6,12 @@ import 'package:mes_km/app.dart';
 import 'package:mes_km/app/providers.dart';
 import 'package:mes_km/data/local/app_database.dart';
 import 'package:mes_km/data/local/sembast_day_extra_repository.dart';
+import 'package:mes_km/data/local/sembast_favorite_trip_repository.dart';
 import 'package:mes_km/data/local/sembast_trip_repository.dart';
 import 'package:mes_km/data/repositories/trip_repository.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
+import 'package:mes_km/domain/models/favorite_trip.dart';
 import 'package:mes_km/domain/models/trip.dart';
 import 'package:mes_km/features/today/editable_day_total.dart';
 import 'package:sembast/sembast_memory.dart';
@@ -373,6 +375,202 @@ void main() {
     expect(find.text('18 km'), findsNothing);
     expectTotal(tester, '69');
     expect(find.text('45 km'), findsOneWidget); // extra intact
+  });
+
+  group('trajets favoris', () {
+    Future<void> seedFavorite(
+      WidgetTester tester, {
+      String id = 'fav-1',
+      String label = 'Cabinet ↔ EHPAD',
+      double km = 24,
+      int sortOrder = 0,
+    }) async {
+      await tester.runAsync(
+          () => SembastFavoriteTripRepository(database.db).put(FavoriteTrip(
+                id: id,
+                label: label,
+                distanceKm: km,
+                sortOrder: sortOrder,
+              )));
+    }
+
+    Future<void> flushSnackBar(WidgetTester tester) async {
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('aucun favori : invitation discrète, pas de section lourde',
+        (tester) async {
+      await pumpApp(tester);
+
+      expect(find.text('Créer un trajet favori'), findsOneWidget);
+      expect(find.text('Trajets favoris'), findsNothing);
+      expect(find.text('Gérer'), findsNothing);
+    });
+
+    testWidgets(
+        'section visible ; UN tap grossier sur la ligne ajoute les km ; '
+        'deux taps additionnent', (tester) async {
+      await seedFavorite(tester);
+      await pumpApp(tester);
+
+      expect(find.text('Trajets favoris'), findsOneWidget);
+      expect(find.text('Cabinet ↔ EHPAD'), findsOneWidget);
+      expect(find.text('+24 km'), findsOneWidget);
+
+      // Tap au bord de la ligne, pas sur le « + » : toute la ligne agit.
+      final rowRect =
+          tester.getRect(find.byKey(const Key('favorite-fav-1')));
+      await tester.tapAt(rowRect.topLeft + const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expectTotal(tester, '24');
+
+      await tester.tapAt(rowRect.topLeft + const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expectTotal(tester, '48');
+
+      // Deux Trips distincts visibles dans la décomposition.
+      expect(find.text('24 km', skipOffstage: false), findsNWidgets(3));
+      await flushSnackBar(tester);
+    });
+
+    testWidgets('DayExtra inchangé : extra 33 + tap favori => 57',
+        (tester) async {
+      await seedFavorite(tester);
+      await seedExtra(tester, 33);
+      await pumpApp(tester);
+      expectTotal(tester, '33');
+
+      await tester.tap(find.byKey(const Key('favorite-fav-1')));
+      await tester.pumpAndSettle();
+
+      expectTotal(tester, '57');
+      expect(find.text('Autres kilomètres'), findsOneWidget);
+      expect(find.text('33 km'), findsOneWidget); // extra intact
+      await flushSnackBar(tester);
+    });
+
+    testWidgets('création d’un favori depuis l’invitation',
+        (tester) async {
+      await pumpApp(tester);
+
+      await tester.tap(find.text('Créer un trajet favori'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.widgetWithText(TextField, 'Nom du favori'), 'Dépôt');
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
+        '7,5',
+      );
+      await tester.tap(find.text('Créer le favori'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Trajets favoris'), findsOneWidget);
+      expect(find.text('Dépôt'), findsOneWidget);
+      expect(find.text('+7,5 km'), findsOneWidget);
+    });
+
+    testWidgets(
+        'modification via Gérer : anciens Trips intacts, prochain tap = 26',
+        (tester) async {
+      await seedFavorite(tester);
+      await pumpApp(tester);
+
+      // Un Trip de 24 d'abord.
+      await tester.tap(find.byKey(const Key('favorite-fav-1')));
+      await tester.pumpAndSettle();
+      await flushSnackBar(tester);
+      expectTotal(tester, '24');
+
+      // Gérer -> éditer -> 26.
+      await tester.tap(find.text('Gérer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('manage-favorite-fav-1')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
+        '26',
+      );
+      await tester.tap(find.text('Enregistrer'));
+      await tester.pumpAndSettle();
+      expect(find.text('26 km'), findsOneWidget); // ligne de gestion
+
+      // Retour Aujourd'hui : l'ancien Trip reste 24, le tap suivant fait 26.
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.text('+26 km'), findsOneWidget);
+      expect(find.text('24 km', skipOffstage: false), findsNWidgets(1));
+
+      await tester.tap(find.byKey(const Key('favorite-fav-1')));
+      await tester.pumpAndSettle();
+      expectTotal(tester, '50');
+      await flushSnackBar(tester);
+    });
+
+    testWidgets('suppression confirmée dans Gérer', (tester) async {
+      await seedFavorite(tester);
+      await pumpApp(tester);
+
+      await tester.tap(find.text('Gérer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+      expect(find.text('Supprimer ce favori ?'), findsOneWidget);
+
+      await tester.tap(find.text('Supprimer'));
+      await tester.pumpAndSettle();
+      expect(find.text('Aucun favori pour le moment.'), findsOneWidget);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.text('Créer un trajet favori'), findsOneWidget);
+    });
+
+    testWidgets('réorganisation par flèches dans Gérer', (tester) async {
+      await seedFavorite(tester, id: 'f-a', label: 'A', km: 24, sortOrder: 0);
+      await seedFavorite(tester, id: 'f-b', label: 'B', km: 18, sortOrder: 1);
+      await pumpApp(tester);
+
+      await tester.tap(find.text('Gérer'));
+      await tester.pumpAndSettle();
+
+      double topOf(String id) =>
+          tester.getTopLeft(find.byKey(Key('manage-favorite-$id'))).dy;
+      expect(topOf('f-a') < topOf('f-b'), isTrue);
+
+      // Descend A sous B.
+      await tester.tap(find.byIcon(Icons.arrow_downward).first);
+      await tester.pumpAndSettle();
+      expect(topOf('f-b') < topOf('f-a'), isTrue);
+
+      // L'ordre est aussi celui d'Aujourd'hui.
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      final todayTopA =
+          tester.getTopLeft(find.byKey(const Key('favorite-f-a'))).dy;
+      final todayTopB =
+          tester.getTopLeft(find.byKey(const Key('favorite-f-b'))).dy;
+      expect(todayTopB < todayTopA, isTrue);
+    });
+
+    testWidgets(
+        'après usage des favoris : compteur direct et curseur masqué OK',
+        (tester) async {
+      await seedFavorite(tester);
+      await pumpApp(tester);
+
+      final field = tester.widget<TextField>(find.byKey(dayTotalFieldKey));
+      expect(field.showCursor, isFalse, reason: 'curseur clignotant masqué');
+
+      await tester.tap(find.byKey(const Key('favorite-fav-1')));
+      await tester.pumpAndSettle();
+      await flushSnackBar(tester);
+
+      await editTotal(tester, '87');
+      expectTotal(tester, '87');
+      expect(find.text('Autres kilomètres'), findsOneWidget);
+    });
   });
 
   testWidgets('état de chargement avant les données', (tester) async {

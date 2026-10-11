@@ -7,6 +7,7 @@ import 'package:mes_km/data/local/sembast_trip_repository.dart';
 import 'package:mes_km/domain/logic/day_total.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
+import 'package:mes_km/domain/models/favorite_trip.dart';
 import 'package:mes_km/domain/models/trip.dart';
 import 'package:mes_km/features/today/today_controller.dart';
 import 'package:sembast/sembast_memory.dart';
@@ -198,6 +199,66 @@ void main() {
     final s = await state();
     expect(s.extraKm, 45, reason: 'l’extra reste 45');
     expect(s.totalKm, 69, reason: 'le total dérivé diminue honnêtement');
+  });
+
+  group('favoris — ajout en un toucher', () {
+    FavoriteTrip favorite({double km = 24, bool roundTrip = false}) =>
+        FavoriteTrip(
+          id: 'fav-1',
+          label: 'Cabinet ↔ EHPAD',
+          distanceKm: km,
+          defaultRoundTrip: roundTrip,
+          origin: 'Cabinet',
+          destination: 'EHPAD',
+          purpose: 'Tournée',
+          sortOrder: 0,
+        );
+
+    test('un tap crée un Trip : distance EXACTE, métadonnées copiées',
+        () async {
+      await controller().addTripFromFavorite(favorite(roundTrip: true));
+
+      final trips = await SembastTripRepository(database.db).getByDate(day);
+      final trip = trips.single;
+      expect(trip.distanceKm, 24, reason: 'aucun doublement');
+      expect(trip.isRoundTrip, isTrue);
+      expect(trip.origin, 'Cabinet');
+      expect(trip.destination, 'EHPAD');
+      expect(trip.purpose, 'Tournée');
+      expect(trip.id, isNot('fav-1'), reason: 'Trip indépendant du favori');
+      expect((await state()).totalKm, 24);
+    });
+
+    test('deux taps => deux Trips distincts, +48', () async {
+      await controller().addTripFromFavorite(favorite());
+      await controller().addTripFromFavorite(favorite());
+
+      final trips = await SembastTripRepository(database.db).getByDate(day);
+      expect(trips, hasLength(2));
+      expect(trips[0].id, isNot(trips[1].id));
+      expect((await state()).totalKm, 48);
+    });
+
+    test('DayExtra JAMAIS recalculé : extra 33 + tap 24 => total 57',
+        () async {
+      await controller().declareTotal(33);
+
+      await controller().addTripFromFavorite(favorite());
+
+      final s = await state();
+      expect(s.extraKm, 33, reason: 'extra inchangé');
+      expect(s.totalKm, 57, reason: 'le favori AJOUTE des kilomètres');
+    });
+
+    test('réouverture : Trips issus de favoris toujours présents', () async {
+      await controller().addTripFromFavorite(favorite());
+      await database.close();
+
+      database = await MesKmDatabase.open(factory, name: 'today.db');
+      container = await makeContainer();
+
+      expect((await state()).totalKm, 24);
+    });
   });
 
   test('réouverture après remise à zéro : la journée reste vide', () async {

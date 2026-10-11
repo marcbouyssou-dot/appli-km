@@ -91,17 +91,14 @@ void main() {
     });
 
     test(
-        'sémantique : distanceKm = aller simple ; la distance comptée '
-        'se calcule à l’utilisation', () {
+        'sémantique V2 : distanceKm EST la distance comptabilisée ; '
+        'defaultRoundTrip est une métadonnée sans doublement', () {
       final favorite = makeFavorite(km: 24, defaultRoundTrip: true);
 
-      // Par défaut (A/R) : 48. Jamais de re-doublement ensuite : cette
-      // valeur alimente Trip.distanceKm qui est déjà la distance totale.
-      expect(favorite.countedDistanceKm(), 48);
-      // Surcharge au moment du tap : aller simple.
-      expect(favorite.countedDistanceKm(roundTrip: false), 24);
-      // Favori aller simple par défaut.
-      expect(makeFavorite(km: 24).countedDistanceKm(), 24);
+      // 24 est la distance totale ajoutée à chaque utilisation, A/R ou non.
+      expect(favorite.distanceKm, 24);
+      expect(favorite.defaultRoundTrip, isTrue);
+      expect(makeFavorite(km: 24).distanceKm, 24);
     });
   });
 

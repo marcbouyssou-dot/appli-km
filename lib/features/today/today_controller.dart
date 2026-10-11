@@ -4,6 +4,7 @@ import '../../app/providers.dart';
 import '../../domain/logic/day_total.dart';
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/day_extra.dart';
+import '../../domain/models/favorite_trip.dart';
 import '../../domain/models/trip.dart';
 
 /// État de l'écran Aujourd'hui : les données du jour, totaux dérivés.
@@ -84,6 +85,29 @@ class TodayController extends AsyncNotifier<TodayState> {
       origin: origin,
       destination: destination,
       purpose: purpose,
+      createdAt: DateTime.now(),
+    );
+    await ref.read(tripRepositoryProvider).put(trip);
+    await _refresh();
+  }
+
+  /// Un toucher sur un favori : crée immédiatement un Trip indépendant.
+  ///
+  /// La distance du favori est copiée TELLE QUELLE (aucun doublement,
+  /// `defaultRoundTrip` n'est qu'une métadonnée), le DayExtra du jour n'est
+  /// jamais recalculé : le favori AJOUTE des kilomètres. Deux taps créent
+  /// deux Trips distincts — aucune déduplication.
+  Future<void> addTripFromFavorite(FavoriteTrip favorite) async {
+    final current = await future;
+    final trip = Trip(
+      id: ref.read(idGeneratorProvider).newId(),
+      date: current.date,
+      distanceKm: favorite.distanceKm,
+      isRoundTrip: favorite.defaultRoundTrip,
+      origin: favorite.origin,
+      destination: favorite.destination,
+      purpose: favorite.purpose,
+      vehicleId: favorite.vehicleId,
       createdAt: DateTime.now(),
     );
     await ref.read(tripRepositoryProvider).put(trip);

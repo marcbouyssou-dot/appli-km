@@ -3,13 +3,12 @@ import 'text.dart';
 
 /// Modèle de saisie en un toucher.
 ///
-/// Sémantique des distances, à ne jamais réinterpréter ailleurs :
-/// - [distanceKm] est la distance d'un ALLER SIMPLE ;
-/// - [defaultRoundTrip] indique seulement ce qui sera proposé par défaut au
-///   moment de l'utilisation ;
-/// - la distance réellement comptée se calcule via [countedDistanceKm] au
-///   moment où le favori est utilisé, et c'est cette valeur qui alimente le
-///   `Trip.distanceKm` créé.
+/// Sémantique des distances (règle produit V2, à ne jamais réinterpréter) :
+/// - [distanceKm] est EXACTEMENT la distance comptabilisée qui sera copiée
+///   telle quelle dans `Trip.distanceKm` à chaque utilisation — déjà totale
+///   si le trajet est un aller-retour. AUCUN doublement, nulle part ;
+/// - [defaultRoundTrip] est une pure métadonnée, copiée dans
+///   `Trip.isRoundTrip`, sans effet sur les calculs.
 ///
 /// Un favori utilisé crée un Trip indépendant : modifier ou supprimer un
 /// favori ne touche jamais l'historique.
@@ -52,10 +51,12 @@ class FavoriteTrip {
   final String id;
   final String label;
 
-  /// Distance d'un aller simple, en km, canonisée au dixième.
+  /// Distance comptabilisée ajoutée à chaque utilisation, en km,
+  /// canonisée au dixième. Déjà totale si aller-retour.
   final double distanceKm;
 
-  /// Proposition par défaut à l'utilisation (aller-retour ou non).
+  /// Métadonnée copiée dans `Trip.isRoundTrip` ; jamais utilisée pour
+  /// doubler une distance.
   final bool defaultRoundTrip;
 
   final String? origin;
@@ -65,11 +66,4 @@ class FavoriteTrip {
 
   /// Position dans la liste des favoris (réorganisable), >= 0.
   final int sortOrder;
-
-  /// Distance comptée si ce favori est utilisé maintenant.
-  /// [roundTrip] permet de surcharger le choix par défaut au moment du tap.
-  double countedDistanceKm({bool? roundTrip}) {
-    final isRoundTrip = roundTrip ?? defaultRoundTrip;
-    return isRoundTrip ? normalizeKm(distanceKm * 2) : distanceKm;
-  }
 }
