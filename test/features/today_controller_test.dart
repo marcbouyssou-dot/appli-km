@@ -200,6 +200,19 @@ void main() {
     expect(s.totalKm, 69, reason: 'le total dérivé diminue honnêtement');
   });
 
+  test('réouverture après remise à zéro : la journée reste vide', () async {
+    await controller().declareTotal(87);
+    await controller().declareTotal(0);
+    await database.close();
+
+    database = await MesKmDatabase.open(factory, name: 'today.db');
+    container = await makeContainer();
+
+    final s = await state();
+    expect(s.isEmpty, isTrue);
+    expect(s.totalKm, 0);
+  });
+
   test('réouverture de la base : les données du jour réapparaissent',
       () async {
     await seedTrips2418();

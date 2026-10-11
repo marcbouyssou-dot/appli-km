@@ -1,14 +1,18 @@
 import '../domain/models/km.dart';
 
-/// Formatage français des kilomètres pour l'affichage :
-/// valeur entière sans décimale (« 87 km »), sinon un dixième (« 87,5 km »).
-String formatKm(double km) {
+/// Valeur kilométrique seule, format français :
+/// entier sans décimale (« 87 »), sinon un dixième (« 87,5 »).
+String formatKmValue(double km) {
   final value = normalizeKm(km);
   if (value == value.roundToDouble()) {
-    return '${value.round()} km';
+    return '${value.round()}';
   }
-  return '${value.toStringAsFixed(1).replaceAll('.', ',')} km';
+  return value.toStringAsFixed(1).replaceAll('.', ',');
 }
+
+/// Formatage français des kilomètres pour l'affichage :
+/// valeur entière sans décimale (« 87 km »), sinon un dixième (« 87,5 km »).
+String formatKm(double km) => '${formatKmValue(km)} km';
 
 /// Analyse une saisie utilisateur en kilomètres (virgule ou point acceptés).
 /// Retourne null si la saisie n'est pas un nombre.

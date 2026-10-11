@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../domain/logic/day_total.dart';
 import '../../domain/models/trip.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/placeholder_card.dart';
+import 'editable_day_total.dart';
 import 'today_controller.dart';
-import 'total_entry_sheet.dart';
 import 'trip_form_sheet.dart';
 
 class TodayScreen extends ConsumerWidget {
@@ -68,22 +67,6 @@ class _TodayView extends ConsumerWidget {
   const _TodayView({required this.today});
 
   final TodayState today;
-
-  Future<void> _enterTotal(BuildContext context, WidgetRef ref) {
-    final controller = ref.read(todayControllerProvider.notifier);
-    return showTotalEntrySheet(
-      context,
-      currentTotalKm: today.totalKm,
-      onSubmit: (totalKm) async {
-        final result = await controller.declareTotal(totalKm);
-        return switch (result) {
-          DailyTotalAdjusted() => null,
-          DailyTotalBelowDetailed(detailedKm: final detailed) =>
-            'Les trajets détaillés totalisent déjà ${formatKm(detailed)}.',
-        };
-      },
-    );
-  }
 
   Future<void> _addTrip(BuildContext context, WidgetRef ref) async {
     final controller = ref.read(todayControllerProvider.notifier);
@@ -168,45 +151,18 @@ class _TodayView extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.xl),
 
-        // Total du jour, toujours dérivé du domaine.
+        // Total du jour, toujours dérivé du domaine, directement éditable.
         Card(
           child: Padding(
             padding: const EdgeInsets.symmetric(
               vertical: AppSpacing.xxl,
               horizontal: AppSpacing.xl,
             ),
-            child: Column(
-              children: [
-                Text(
-                  formatKm(today.totalKm),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.displayLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s),
-                Text(
-                  'aujourd’hui',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+            child: EditableDayTotal(totalKm: today.totalKm),
           ),
         ),
         const SizedBox(height: AppSpacing.l),
 
-        FilledButton.icon(
-          onPressed: () => _enterTotal(context, ref),
-          icon: const Icon(Icons.speed),
-          label: const Text('Saisir le total du jour'),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(AppSizes.minTouchTarget + 8),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.m),
         FilledButton.tonalIcon(
           onPressed: () => _addTrip(context, ref),
           icon: const Icon(Icons.add),

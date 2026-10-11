@@ -36,7 +36,9 @@ void main() {
     await pumpApp(tester);
 
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('0 km'), findsOneWidget);
+    // La grande valeur éditable affiche 0 pour une journée vide.
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('km aujourd’hui'), findsOneWidget);
   });
 
   testWidgets('les 4 destinations sont présentes', (tester) async {
@@ -69,7 +71,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.today_outlined));
     await tester.pumpAndSettle();
-    expect(find.text('0 km'), findsOneWidget);
+    expect(find.text('km aujourd’hui'), findsOneWidget);
   });
 
   testWidgets('le thème suit le mode système (clair/sombre)', (tester) async {

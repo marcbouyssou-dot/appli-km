@@ -11,6 +11,7 @@ import 'package:mes_km/data/repositories/trip_repository.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
 import 'package:mes_km/domain/models/trip.dart';
+import 'package:mes_km/features/today/editable_day_total.dart';
 import 'package:sembast/sembast_memory.dart';
 
 void main() {
@@ -70,6 +71,21 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Saisit [text] dans la grande valeur puis termine l'édition (« OK »).
+  Future<void> editTotal(WidgetTester tester, String text) async {
+    await tester.enterText(find.byKey(dayTotalFieldKey), text);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+  }
+
+  bool totalFieldHasFocus(WidgetTester tester) {
+    final editable = tester.widget<EditableText>(find.descendant(
+      of: find.byKey(dayTotalFieldKey),
+      matching: find.byType(EditableText),
+    ));
+    return editable.focusNode.hasFocus;
+  }
+
   testWidgets('affiche le total dérivé des données existantes',
       (tester) async {
     await seedTrip(tester, 't-1', 24);
@@ -77,25 +93,105 @@ void main() {
 
     await pumpApp(tester);
 
-    expect(find.text('69 km'), findsOneWidget);
+    expect(find.text('69'), findsOneWidget); // grande valeur éditable
+    expect(find.text('km aujourd’hui'), findsOneWidget);
   });
 
-  testWidgets('saisie directe du total du jour', (tester) async {
+  testWidgets('toucher la grande valeur ouvre l’édition (clavier)',
+      (tester) async {
+    await pumpApp(tester);
+    expect(totalFieldHasFocus(tester), isFalse);
+
+    await tester.tap(find.byKey(dayTotalFieldKey));
+    await tester.pumpAndSettle();
+
+    expect(totalFieldHasFocus(tester), isTrue);
+  });
+
+  testWidgets('saisie directe : 87 affiché puis persisté', (tester) async {
     await pumpApp(tester);
 
-    await tester.tap(find.text('Saisir le total du jour'));
-    await tester.pumpAndSettle();
+    await editTotal(tester, '87');
 
-    await tester.enterText(find.byType(TextField), '87');
-    await tester.tap(find.text('Valider'));
-    await tester.pumpAndSettle();
-
-    // Total du jour + ligne « Autres kilomètres » (extra 87).
-    expect(find.text('87 km'), findsNWidgets(2));
+    expect(find.text('87'), findsOneWidget);
     expect(find.text('Autres kilomètres'), findsOneWidget);
+    expect(find.text('87 km'), findsOneWidget); // ligne autres kilomètres
+
+    final stored = await tester.runAsync(
+        () => SembastDayExtraRepository(database.db).getForDate(day));
+    expect(stored?.extraKm, 87);
   });
 
-  testWidgets('ajout d’un trajet manuel', (tester) async {
+  testWidgets('virgule française acceptée (24,5)', (tester) async {
+    await pumpApp(tester);
+
+    await editTotal(tester, '24,5');
+
+    expect(find.text('24,5'), findsOneWidget);
+    final stored = await tester.runAsync(
+        () => SembastDayExtraRepository(database.db).getForDate(day));
+    expect(stored?.extraKm, 24.5);
+  });
+
+  testWidgets(
+      'RÉGRESSION KM-004A/B : 87 puis édition à 0 => journée vide',
+      (tester) async {
+    await seedExtra(tester, 87);
+
+    await pumpApp(tester);
+    expect(find.text('87'), findsOneWidget);
+
+    await editTotal(tester, '0');
+
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('Autres kilomètres'), findsNothing);
+    expect(
+      find.text('Aucun kilomètre enregistré aujourd’hui.'),
+      findsOneWidget,
+    );
+    final stored = await tester.runAsync(
+        () => SembastDayExtraRepository(database.db).getForDate(day));
+    expect(stored, isNull);
+  });
+
+  testWidgets(
+      'Trips 24+18 : tentative 40 refusée, dernière valeur valide restaurée',
+      (tester) async {
+    await seedTrip(tester, 't-1', 24);
+    await seedTrip(tester, 't-2', 18);
+
+    await pumpApp(tester);
+    expect(find.text('42'), findsOneWidget);
+
+    await editTotal(tester, '40');
+
+    expect(
+      find.text('Les trajets détaillés totalisent déjà 42 km.'),
+      findsOneWidget,
+    );
+    expect(find.text('42'), findsOneWidget); // valeur restaurée
+    expect(find.text('24 km'), findsOneWidget);
+    expect(find.text('18 km'), findsOneWidget);
+
+    // Laisse la snackbar expirer (timer en attente sinon).
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('saisie invalide : valeur restaurée, rien n’est écrit',
+      (tester) async {
+    await seedExtra(tester, 87);
+
+    await pumpApp(tester);
+    await editTotal(tester, 'abc');
+
+    expect(find.text('87'), findsOneWidget);
+    final stored = await tester.runAsync(
+        () => SembastDayExtraRepository(database.db).getForDate(day));
+    expect(stored?.extraKm, 87);
+  });
+
+  testWidgets('« Ajouter un trajet » reste fonctionnel', (tester) async {
     await pumpApp(tester);
 
     await tester.tap(find.text('Ajouter un trajet'));
@@ -109,7 +205,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Trajets détaillés'), findsOneWidget);
-    expect(find.text('24,5 km'), findsNWidgets(2)); // total + ligne trajet
+    expect(find.text('24,5 km'), findsOneWidget); // ligne trajet
+    expect(find.text('24,5'), findsOneWidget); // grande valeur
   });
 
   testWidgets('décomposition : détaillés + autres kilomètres',
@@ -120,100 +217,12 @@ void main() {
 
     await pumpApp(tester);
 
-    expect(find.text('87 km'), findsOneWidget);
+    expect(find.text('87'), findsOneWidget);
     expect(find.text('Trajets détaillés'), findsOneWidget);
     expect(find.text('24 km'), findsOneWidget);
     expect(find.text('18 km'), findsOneWidget);
     expect(find.text('Autres kilomètres'), findsOneWidget);
     expect(find.text('45 km'), findsOneWidget);
-  });
-
-  testWidgets(
-      'RÉGRESSION iPhone KM-004A : extra 87 seul, saisir 0 => journée vide',
-      (tester) async {
-    await seedExtra(tester, 87);
-
-    await pumpApp(tester);
-    expect(find.text('87 km'), findsNWidgets(2)); // total + autres km
-
-    await tester.tap(find.text('Saisir le total du jour'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), '0');
-    await tester.tap(find.text('Valider'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('0 km'), findsOneWidget);
-    expect(find.text('Autres kilomètres'), findsNothing);
-    expect(
-      find.text('Aucun kilomètre enregistré aujourd’hui.'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('bouton « Remettre la journée à zéro » efface l’extra',
-      (tester) async {
-    await seedExtra(tester, 87);
-
-    await pumpApp(tester);
-    await tester.tap(find.text('Saisir le total du jour'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Remettre la journée à zéro'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('0 km'), findsOneWidget);
-    expect(find.text('Autres kilomètres'), findsNothing);
-  });
-
-  testWidgets(
-      'remise à zéro avec trajets détaillés => refus métier, trips intacts',
-      (tester) async {
-    await seedTrip(tester, 't-1', 24);
-    await seedTrip(tester, 't-2', 18);
-
-    await pumpApp(tester);
-    await tester.tap(find.text('Saisir le total du jour'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Remettre la journée à zéro'));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text('Les trajets détaillés totalisent déjà 42 km.'),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.text('Annuler'));
-    await tester.pumpAndSettle();
-    expect(find.text('42 km'), findsOneWidget);
-    expect(find.text('24 km'), findsOneWidget);
-    expect(find.text('18 km'), findsOneWidget);
-  });
-
-  testWidgets('refus d’un total inférieur aux trajets détaillés',
-      (tester) async {
-    await seedTrip(tester, 't-1', 24);
-    await seedTrip(tester, 't-2', 18);
-
-    await pumpApp(tester);
-    expect(find.text('42 km'), findsOneWidget);
-
-    await tester.tap(find.text('Saisir le total du jour'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), '40');
-    await tester.tap(find.text('Valider'));
-    await tester.pumpAndSettle();
-
-    // Le refus est affiché dans la feuille, rien n'est modifié.
-    expect(
-      find.text('Les trajets détaillés totalisent déjà 42 km.'),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.text('Annuler'));
-    await tester.pumpAndSettle();
-    expect(find.text('42 km'), findsOneWidget);
-    expect(find.text('Autres kilomètres'), findsNothing);
   });
 
   testWidgets('suppression avec confirmation, DayExtra inchangé',
@@ -223,7 +232,7 @@ void main() {
     await seedExtra(tester, 45);
 
     await pumpApp(tester);
-    expect(find.text('87 km'), findsOneWidget);
+    expect(find.text('87'), findsOneWidget);
 
     // Supprime le trajet de 18 km (bouton de SA ligne, pas un index).
     final row18 = find.ancestor(
@@ -240,7 +249,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('18 km'), findsNothing);
-    expect(find.text('69 km'), findsOneWidget);
+    expect(find.text('69'), findsOneWidget);
     expect(find.text('45 km'), findsOneWidget); // extra intact
   });
 
@@ -255,15 +264,15 @@ void main() {
       ),
     );
 
-    // Premier frame : lecture asynchrone en cours, pas de « 0 km » définitif.
+    // Premier frame : lecture asynchrone en cours, pas de « 0 » définitif.
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.text('0 km'), findsNothing);
+    expect(find.text('0'), findsNothing);
 
     await tester.pumpAndSettle();
-    expect(find.text('0 km'), findsOneWidget);
+    expect(find.text('0'), findsOneWidget);
   });
 
-  testWidgets('erreur de lecture : message + réessayer, jamais « 0 km »',
+  testWidgets('erreur de lecture : message + réessayer, jamais de total',
       (tester) async {
     await pumpApp(tester, tripRepository: _ThrowingTripRepository());
 
@@ -272,7 +281,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Réessayer'), findsOneWidget);
-    expect(find.text('0 km'), findsNothing);
+    expect(find.text('0'), findsNothing);
   });
 }
 
