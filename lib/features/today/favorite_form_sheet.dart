@@ -125,6 +125,13 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
               isEditing ? 'Modifier le favori' : 'Nouveau trajet favori',
               style: theme.textTheme.titleLarge,
             ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Disponible sur toutes les journées.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.l),
             TextField(
               controller: _labelController,

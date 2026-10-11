@@ -2,34 +2,51 @@ import 'package:flutter/material.dart';
 
 import '../../theme/tokens.dart';
 import '../../widgets/placeholder_card.dart';
+import '../today/manage_favorites_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
-      children: const [
-        ScreenTitle('Plus'),
-        _UpcomingTile(
+      children: [
+        const ScreenTitle('Plus'),
+        // Gestion GLOBALE des trajets favoris (créer/modifier/supprimer/
+        // réordonner) — volontairement hors du contexte d'une journée.
+        ListTile(
+          leading: Icon(Icons.star_outline, color: theme.colorScheme.primary),
+          title: const Text('Trajets favoris'),
+          subtitle: const Text('Favoris proposés sur toutes les journées'),
+          trailing: const Icon(Icons.chevron_right),
+          minTileHeight: AppSizes.minTouchTarget + 8,
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const ManageFavoritesScreen(),
+            ));
+          },
+        ),
+        const _UpcomingTile(
           icon: Icons.directions_car_outlined,
           title: 'Véhicules',
         ),
-        _UpcomingTile(
+        const _UpcomingTile(
           icon: Icons.description_outlined,
           title: 'Documents',
         ),
-        _UpcomingTile(
+        const _UpcomingTile(
           icon: Icons.save_alt_outlined,
           title: 'Sauvegarde',
         ),
-        _UpcomingTile(
+        const _UpcomingTile(
           icon: Icons.settings_outlined,
           title: 'Réglages',
         ),
-        SizedBox(height: AppSpacing.l),
-        PlaceholderCard(
+        const SizedBox(height: AppSpacing.l),
+        const PlaceholderCard(
           icon: Icons.construction_outlined,
           title: 'Ces sections seront activées dans les prochains lots',
         ),

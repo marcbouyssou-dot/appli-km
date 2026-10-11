@@ -272,6 +272,51 @@ void main() {
     });
   });
 
+  testWidgets(
+      'suppression globale (via Plus) : le favori disparaît des journées '
+      'passées, les Trips historiques restent', (tester) async {
+    await tester.runAsync(
+        () => SembastFavoriteTripRepository(database.db).put(FavoriteTrip(
+              id: 'fav-1',
+              label: 'Cabinet ↔ EHPAD',
+              distanceKm: 24,
+              sortOrder: 0,
+            )));
+    await pumpOnCalendar(tester);
+
+    // Un Trip historique issu du favori sur le 5.
+    await tester.tap(cell('2026-10-05'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('favorite-fav-1')));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    // Suppression globale depuis Plus.
+    await tester.tap(find.byIcon(Icons.more_horiz_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Trajets favoris'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Supprimer'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    // La journée passée ne propose plus le favori, mais garde son Trip.
+    await tester.tap(find.byIcon(Icons.calendar_month_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(cell('2026-10-05'));
+    await tester.pumpAndSettle();
+    expect(find.text('Créer un trajet favori'), findsOneWidget);
+    expect(find.byKey(const Key('favorite-fav-1')), findsNothing);
+    expect(find.text('Trajets détaillés'), findsOneWidget);
+    expect(totalFieldText(tester), '24');
+  });
+
   testWidgets('navigation mois précédent/suivant + retour aujourd’hui',
       (tester) async {
     await seedTrip(tester, CivilDate(2026, 9, 30), 99);

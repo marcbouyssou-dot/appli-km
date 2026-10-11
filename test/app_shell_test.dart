@@ -67,6 +67,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.more_horiz_outlined));
     await tester.pumpAndSettle();
+    expect(find.text('Trajets favoris'), findsOneWidget);
     expect(find.text('Véhicules'), findsOneWidget);
     expect(find.text('Documents'), findsOneWidget);
     expect(find.text('Sauvegarde'), findsOneWidget);

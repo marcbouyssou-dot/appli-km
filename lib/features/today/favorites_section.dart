@@ -8,7 +8,6 @@ import '../../domain/models/civil_date.dart';
 import '../day/day_controller.dart';
 import 'favorite_form_sheet.dart';
 import 'favorites_controller.dart';
-import 'manage_favorites_screen.dart';
 
 /// Section « Trajets favoris », disponible sur TOUTE journée éditable
 /// (aujourd'hui comme journée passée).
@@ -81,27 +80,14 @@ class FavoritesSection extends ConsumerWidget {
       );
     }
 
+    // Ici on UTILISE les favoris (tap = ajout d'un Trip à cette journée).
+    // La gestion globale (créer/modifier/supprimer/réordonner) vit dans
+    // l'onglet Plus, hors du contexte d'une journée : supprimer un favori
+    // ici était ambigu (il disparaissait de toutes les journées).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Trajets favoris',
-                style: theme.textTheme.titleMedium,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => const ManageFavoritesScreen(),
-                ));
-              },
-              child: const Text('Gérer'),
-            ),
-          ],
-        ),
+        Text('Trajets favoris', style: theme.textTheme.titleMedium),
         const SizedBox(height: AppSpacing.s),
         Card(
           child: Column(

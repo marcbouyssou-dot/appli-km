@@ -399,6 +399,22 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    // La gestion globale vit dans l'onglet Plus (plus de « Gérer » en
+    // contexte de journée).
+    Future<void> openManagement(WidgetTester tester) async {
+      await tester.tap(find.byIcon(Icons.more_horiz_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Trajets favoris'));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> backToToday(WidgetTester tester) async {
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.today_outlined));
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('aucun favori : invitation discrète, pas de section lourde',
         (tester) async {
       await pumpApp(tester);
@@ -417,6 +433,8 @@ void main() {
       expect(find.text('Trajets favoris'), findsOneWidget);
       expect(find.text('Cabinet ↔ EHPAD'), findsOneWidget);
       expect(find.text('+24 km'), findsOneWidget);
+      // Plus d'accès de gestion ambigu dans le contexte d'une journée.
+      expect(find.text('Gérer'), findsNothing);
 
       // Tap au bord de la ligne, pas sur le « + » : toute la ligne agit.
       final rowRect =
@@ -472,7 +490,7 @@ void main() {
     });
 
     testWidgets(
-        'modification via Gérer : anciens Trips intacts, prochain tap = 26',
+        'modification via Plus > Trajets favoris : anciens Trips intacts, prochain tap = 26',
         (tester) async {
       await seedFavorite(tester);
       await pumpApp(tester);
@@ -483,9 +501,8 @@ void main() {
       await flushSnackBar(tester);
       expectTotal(tester, '24');
 
-      // Gérer -> éditer -> 26.
-      await tester.tap(find.text('Gérer'));
-      await tester.pumpAndSettle();
+      // Plus -> Trajets favoris -> éditer -> 26.
+      await openManagement(tester);
       await tester.tap(find.byKey(const Key('manage-favorite-fav-1')));
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -497,8 +514,7 @@ void main() {
       expect(find.text('26 km'), findsOneWidget); // ligne de gestion
 
       // Retour Aujourd'hui : l'ancien Trip reste 24, le tap suivant fait 26.
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
+      await backToToday(tester);
       expect(find.text('+26 km'), findsOneWidget);
       expect(find.text('24 km'), findsNWidgets(1));
 
@@ -508,32 +524,34 @@ void main() {
       await flushSnackBar(tester);
     });
 
-    testWidgets('suppression confirmée dans Gérer', (tester) async {
+    testWidgets('suppression confirmée via la gestion globale (Plus)', (tester) async {
       await seedFavorite(tester);
       await pumpApp(tester);
 
-      await tester.tap(find.text('Gérer'));
-      await tester.pumpAndSettle();
+      await openManagement(tester);
       await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
       expect(find.text('Supprimer ce favori ?'), findsOneWidget);
+      // La confirmation explique que les Trips existants restent.
+      expect(
+        find.textContaining('ne seront pas supprimés'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Supprimer'));
       await tester.pumpAndSettle();
       expect(find.text('Aucun favori pour le moment.'), findsOneWidget);
 
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
+      await backToToday(tester);
       expect(find.text('Créer un trajet favori'), findsOneWidget);
     });
 
-    testWidgets('réorganisation par flèches dans Gérer', (tester) async {
+    testWidgets('réorganisation par flèches via la gestion globale', (tester) async {
       await seedFavorite(tester, id: 'f-a', label: 'A', km: 24, sortOrder: 0);
       await seedFavorite(tester, id: 'f-b', label: 'B', km: 18, sortOrder: 1);
       await pumpApp(tester);
 
-      await tester.tap(find.text('Gérer'));
-      await tester.pumpAndSettle();
+      await openManagement(tester);
 
       double topOf(String id) =>
           tester.getTopLeft(find.byKey(Key('manage-favorite-$id'))).dy;
@@ -545,8 +563,7 @@ void main() {
       expect(topOf('f-b') < topOf('f-a'), isTrue);
 
       // L'ordre est aussi celui d'Aujourd'hui.
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
+      await backToToday(tester);
       final todayTopA =
           tester.getTopLeft(find.byKey(const Key('favorite-f-a'))).dy;
       final todayTopB =

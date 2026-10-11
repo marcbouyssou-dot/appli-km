@@ -251,6 +251,20 @@ void main() {
       expect(s.totalKm, 57, reason: 'le favori AJOUTE des kilomètres');
     });
 
+    test('supprimer un Trip issu d’un favori n’affecte jamais '
+        'le FavoriteTrip', () async {
+      final favoriteRepo = SembastFavoriteTripRepository(database.db);
+      await favoriteRepo.put(favorite());
+      await controller().addTripFromFavorite(favorite());
+
+      final trip = (await state()).trips.single;
+      await controller().deleteTrip(trip.id);
+
+      expect((await state()).trips, isEmpty);
+      expect(await favoriteRepo.getAllOrdered(), hasLength(1),
+          reason: 'le favori global reste disponible');
+    });
+
     test('réouverture : Trips issus de favoris toujours présents', () async {
       await controller().addTripFromFavorite(favorite());
       await database.close();

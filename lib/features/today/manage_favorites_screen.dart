@@ -56,8 +56,9 @@ class ManageFavoritesScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Supprimer ce favori ?'),
         content: Text(
-          '${favorite.label} — ${formatKm(favorite.distanceKm)}\n'
-          'Les trajets déjà enregistrés ne seront pas modifiés.',
+          '${favorite.label} — ${formatKm(favorite.distanceKm)}\n\n'
+          'Il ne sera plus proposé dans vos trajets favoris.\n'
+          'Les trajets déjà enregistrés ne seront pas supprimés.',
         ),
         actions: [
           TextButton(
@@ -90,6 +91,16 @@ class ManageFavoritesScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.l),
           children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.l),
+              child: Text(
+                'Ces favoris sont proposés sur toutes les journées. '
+                'Les supprimer ne supprime aucun trajet déjà enregistré.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
             if (favorites.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.xl),
