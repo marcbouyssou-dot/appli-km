@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../theme/app_typography.dart';
+import '../../theme/mes_km_colors.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/section_header.dart';
@@ -141,6 +142,24 @@ class FavoritesSection extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
+                          // Repère favori (récurrence = orange chaud) —
+                          // il appartient à la grande zone d'ajout, ce
+                          // n'est pas une cible distincte.
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: theme.mesKm.favoriteContainer,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.s),
+                            ),
+                            child: Icon(
+                              Icons.route_outlined,
+                              size: 19,
+                              color: theme.mesKm.onFavoriteContainer,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.m),
                           Expanded(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -166,11 +185,25 @@ class FavoritesSection extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(width: AppSpacing.s),
-                          // Le « + » : la valeur ajoutée, très lisible.
-                          Text(
-                            '+${formatKm(favorite.distanceKm)}',
-                            style: AppTypography.value.copyWith(
-                              color: theme.colorScheme.primary,
+                          // Le « + » : la valeur ajoutée, très lisible,
+                          // sur une teinte d'action légère (pas de
+                          // capsule Material).
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.s,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer
+                                  .withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '+${formatKm(favorite.distanceKm)}',
+                              style: AppTypography.value.copyWith(
+                                fontSize: 20,
+                                color: theme.colorScheme.primary,
+                              ),
                             ),
                           ),
                         ],
@@ -209,6 +242,8 @@ class FavoritesSection extends ConsumerWidget {
             icon: const Icon(Icons.add, size: 18),
             label: const Text('Nouveau favori'),
             style: TextButton.styleFrom(
+              // Couleur de la récurrence, en léger : action secondaire.
+              foregroundColor: theme.mesKm.favorite,
               minimumSize: const Size(0, AppSizes.minTouchTarget),
               padding:
                   const EdgeInsets.symmetric(horizontal: AppSpacing.s),

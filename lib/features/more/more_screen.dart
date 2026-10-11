@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/mes_km_colors.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/placeholder_card.dart';
 import '../../widgets/section_header.dart';
@@ -23,6 +24,8 @@ class MoreScreen extends StatelessWidget {
       required String title,
       required String subtitle,
       required Widget Function() screen,
+      required Color iconBackground,
+      required Color iconColor,
     }) {
       return InkWell(
         onTap: () {
@@ -39,20 +42,20 @@ class MoreScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
             child: Row(
               children: [
-                // Traitement signature : icône contour dans un cercle
-                // léger, une seule teinte (jamais cinq couleurs).
+                // Traitement signature (UX-001C) : pictogramme dans un
+                // container pastel dont la teinte dit le SENS de la
+                // destination (récurrence, mobilité, donnée, neutre).
                 Container(
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer
-                        .withValues(alpha: 0.55),
-                    shape: BoxShape.circle,
+                    color: iconBackground,
+                    borderRadius: BorderRadius.circular(AppRadius.s),
                   ),
                   child: Icon(
                     icon,
                     size: 20,
-                    color: theme.colorScheme.primary,
+                    color: iconColor,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.l),
@@ -100,10 +103,12 @@ class MoreScreen extends StatelessWidget {
         // Gestion GLOBALE des trajets favoris (créer/modifier/supprimer/
         // réordonner) — volontairement hors du contexte d'une journée.
         row(
-          icon: Icons.star_outline,
+          icon: Icons.route_outlined,
           title: 'Trajets favoris',
           subtitle: 'Favoris proposés sur toutes les journées',
           screen: () => const ManageFavoritesScreen(),
+          iconBackground: theme.mesKm.favoriteContainer,
+          iconColor: theme.mesKm.onFavoriteContainer,
         ),
         hairline(),
         row(
@@ -111,6 +116,8 @@ class MoreScreen extends StatelessWidget {
           title: 'Véhicules',
           subtitle: 'Gérer vos véhicules et le principal',
           screen: () => const VehiclesScreen(),
+          iconBackground: theme.mesKm.mobilityContainer,
+          iconColor: theme.mesKm.onMobilityContainer,
         ),
 
         const SectionHeader('MES DONNÉES'),
@@ -119,6 +126,8 @@ class MoreScreen extends StatelessWidget {
           title: 'Documents',
           subtitle: 'Relevé annuel PDF et détail CSV',
           screen: () => const DocumentsScreen(),
+          iconBackground: theme.mesKm.dataContainer,
+          iconColor: theme.mesKm.onDataContainer,
         ),
         hairline(),
         row(
@@ -126,6 +135,8 @@ class MoreScreen extends StatelessWidget {
           title: 'Sauvegarde',
           subtitle: 'Exporter ou restaurer vos données',
           screen: () => const BackupScreen(),
+          iconBackground: theme.mesKm.dataContainer,
+          iconColor: theme.mesKm.onDataContainer,
         ),
 
         const SectionHeader('APPLICATION'),
@@ -134,6 +145,8 @@ class MoreScreen extends StatelessWidget {
           title: 'Réglages',
           subtitle: 'Informations pour les documents',
           screen: () => const SettingsScreen(),
+          iconBackground: theme.colorScheme.surfaceContainerHighest,
+          iconColor: theme.colorScheme.onSurfaceVariant,
         ),
         const SizedBox(height: AppSpacing.xxl),
       ],

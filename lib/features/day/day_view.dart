@@ -6,6 +6,7 @@ import '../../domain/logic/vacations.dart';
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/trip.dart';
 import '../../domain/models/vacation_period.dart';
+import '../../theme/mes_km_colors.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/app_buttons.dart';
 import '../../widgets/empty_state.dart';
@@ -381,44 +382,51 @@ class _DayContent extends ConsumerWidget {
         // Favoris : ajout en un toucher, Trip daté de CETTE journée.
         FavoritesSection(date: day.date),
 
-        // Action signature Mes Km (UX-001B) : pas de grande pilule —
-        // pastille d'icône + libellé, cible pleine largeur >= 56 px.
-        InkWell(
-          onTap: () => _addTrip(context, ref),
-          borderRadius: BorderRadius.circular(AppRadius.s),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: AppSizes.primaryActionHeight,
+        // Action principale alternative au favori (UX-001C) : bouton Mes Km
+        // bleu plein, léger dégradé bleu → turquoise cohérent avec le trait
+        // du héros. Coins maîtrisés, cible >= 56 px — évident sans dominer
+        // le compteur.
+        Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.m),
+          clipBehavior: Clip.antiAlias,
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  Color.lerp(
+                      theme.colorScheme.primary, theme.mesKm.mobility, 0.45)!,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.m),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.add,
-                    size: 19,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
+            child: InkWell(
+              onTap: () => _addTrip(context, ref),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: AppSizes.primaryActionHeight,
                 ),
-                const SizedBox(width: AppSpacing.m),
-                Flexible(
-                  child: Text(
-                    'Ajouter un trajet',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add,
+                        size: 22, color: theme.colorScheme.onPrimary),
+                    const SizedBox(width: AppSpacing.s),
+                    Flexible(
+                      child: Text(
+                        'Ajouter un trajet',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -488,6 +496,11 @@ class _DayContent extends ConsumerWidget {
               ),
             ),
             minTileHeight: AppSizes.minTouchTarget + 8,
+            leading: Icon(
+              Icons.directions_car_outlined,
+              size: 20,
+              color: theme.mesKm.mobility,
+            ),
             title: Text(
               formatKm(day.extraKm),
               style: theme.textTheme.titleMedium?.copyWith(

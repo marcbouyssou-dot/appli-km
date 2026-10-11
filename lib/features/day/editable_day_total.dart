@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/logic/day_total.dart';
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/km.dart';
+import '../../theme/mes_km_colors.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import 'day_controller.dart';
@@ -181,7 +182,23 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.s),
+            // Signature Mes Km (UX-001C) : trait « route » bleu → turquoise
+            // sous le héros — un repère, pas une carte.
+            Container(
+              width: 56,
+              height: 4,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.mesKm.mobility,
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,

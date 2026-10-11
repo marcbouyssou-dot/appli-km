@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/mes_km_colors.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 
@@ -51,9 +52,35 @@ class MonthlyBarChart extends StatelessWidget {
                           ? 2
                           : 2 + (monthlyTotals[i] / max) * 110,
                       decoration: BoxDecoration(
-                        color: monthlyTotals[i] > 0
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.surfaceContainerHighest,
+                        // UX-001C : le maximum porte le bleu Mes Km franc
+                        // (dégradé vers le turquoise, cohérent avec le
+                        // héros) ; les autres mois restent bleu-turquoise
+                        // très clair. Jamais 12 couleurs.
+                        color: monthlyTotals[i] > 0 && i != maxIndex
+                            ? Color.lerp(
+                                theme.colorScheme.primary,
+                                theme.mesKm.mobility,
+                                0.35,
+                              )!
+                                .withValues(alpha: 0.30)
+                            : monthlyTotals[i] > 0
+                                ? null
+                                : theme
+                                    .colorScheme.surfaceContainerHighest,
+                        gradient: monthlyTotals[i] > 0 && i == maxIndex
+                            ? LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  theme.colorScheme.primary,
+                                  Color.lerp(
+                                    theme.colorScheme.primary,
+                                    theme.mesKm.mobility,
+                                    0.55,
+                                  )!,
+                                ],
+                              )
+                            : null,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(4),
                         ),

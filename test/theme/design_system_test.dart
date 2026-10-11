@@ -9,6 +9,7 @@ import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/theme/app_theme.dart';
 import 'package:mes_km/theme/mes_km_colors.dart';
 import 'package:mes_km/theme/tokens.dart';
+import 'package:mes_km/theme/vehicle_accent.dart';
 import 'package:mes_km/widgets/app_buttons.dart';
 import 'package:mes_km/widgets/empty_state.dart';
 import 'package:mes_km/widgets/grouped_list.dart';
@@ -280,6 +281,107 @@ void main() {
       final field = tester.widget<TextField>(
           find.byKey(const Key('day-total-field')));
       expect(field.controller!.text, '23');
+    });
+  });
+
+  group('personnalité UX-001C', () {
+    test('accents de contenu : trois rôles, light et dark dédiés', () {
+      final light = AppTheme.light().extension<MesKmColors>()!;
+      final dark = AppTheme.dark().extension<MesKmColors>()!;
+      // Chaque couleur a un sens : mobilité, favori, donnée.
+      expect(light.mobility, AppPalette.mobility);
+      expect(light.favorite, AppPalette.favorite);
+      expect(light.data, AppPalette.data);
+      expect(dark.mobility, AppPalette.mobilityDark);
+      expect(dark.favorite, AppPalette.favoriteDark);
+      expect(dark.data, AppPalette.dataDark);
+      // Pas d'arc-en-ciel : les trois accents sont distincts entre eux
+      // et distincts des rôles sémantiques existants.
+      final all = {
+        light.mobility, light.favorite, light.data,
+        light.success, light.warning, light.vacation,
+        AppTheme.light().colorScheme.primary,
+      };
+      expect(all, hasLength(7));
+    });
+
+    test('accent véhicule : DÉTERMINISTE, stable, neutre pour null', () {
+      final theme = AppTheme.light();
+      final a1 = vehicleAccent(theme, 'peugeot');
+      final a2 = vehicleAccent(theme, 'peugeot');
+      expect(a1, a2, reason: 'le même véhicule garde la même couleur');
+      expect(vehicleAccent(theme, null), theme.colorScheme.outline,
+          reason: 'sans véhicule = gris neutre, jamais un accent');
+    });
+
+    testWidgets(
+        'Aujourd\'hui : héros toujours sans Card, trait signature présent, '
+        '« Ajouter un trajet » bleu Mes Km >= 56 px', (tester) async {
+      final database = await MesKmDatabase.open(newDatabaseFactoryMemory(),
+          name: 'ds4.db');
+      addTearDown(database.close);
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          todayDateProvider.overrideWithValue(() => CivilDate(2026, 10, 12)),
+        ],
+        child: const MesKmApp(),
+      ));
+      await tester.pumpAndSettle();
+
+      final hero = find.byKey(const Key('day-total-card'));
+      expect(find.ancestor(of: hero, matching: find.byType(Card)),
+          findsNothing);
+
+      final addTrip = find.text('Ajouter un trajet');
+      expect(addTrip, findsOneWidget);
+      final inkFinder =
+          find.ancestor(of: addTrip, matching: find.byType(Ink));
+      expect(inkFinder, findsWidgets);
+      expect(tester.getSize(inkFinder.first).height,
+          greaterThanOrEqualTo(AppSizes.primaryActionHeight));
+      final decoration = tester.widget<Ink>(inkFinder.first).decoration!
+          as BoxDecoration;
+      expect(decoration.gradient!.colors.first, AppPalette.primary,
+          reason: 'action principale = bleu Mes Km');
+    });
+
+    testWidgets('Plus : trois groupes, zéro Card/ListTile visible, '
+        'pictogrammes pastel porteurs de sens', (tester) async {
+      final database = await MesKmDatabase.open(newDatabaseFactoryMemory(),
+          name: 'ds5.db');
+      addTearDown(database.close);
+      tester.view.physicalSize = const Size(500, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          todayDateProvider.overrideWithValue(() => CivilDate(2026, 10, 12)),
+        ],
+        child: const MesKmApp(),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.more_horiz_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.text('MES TRAJETS'), findsOneWidget);
+      expect(find.text('MES DONNÉES'), findsOneWidget);
+      expect(find.text('APPLICATION'), findsOneWidget);
+      final moreScroll = find.byType(ListView).last;
+      expect(
+          find.descendant(of: moreScroll, matching: find.byType(Card)),
+          findsNothing);
+      expect(
+          find.descendant(of: moreScroll, matching: find.byType(ListTile)),
+          findsNothing);
+      // Les cinq destinations restent présentes et navigables.
+      for (final label in [
+        'Trajets favoris', 'Véhicules', 'Documents', 'Sauvegarde', 'Réglages',
+      ]) {
+        expect(find.descendant(of: moreScroll, matching: find.text(label)),
+            findsOneWidget);
+      }
     });
   });
 

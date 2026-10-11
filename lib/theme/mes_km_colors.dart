@@ -8,7 +8,11 @@ import 'tokens.dart';
 /// Usage strict (pas de couleur décorative) :
 /// - success : confirmations d'état positif ;
 /// - warning : provisoire / à compléter (dont la simulation fiscale) ;
-/// - vacation : l'état « Congé » (distinct, ni positif ni alarmant).
+/// - vacation : l'état « Congé » (distinct, ni positif ni alarmant) ;
+/// - mobility : véhicule / mobilité (turquoise doux) ;
+/// - favorite : favori / récurrence (orange chaud doux) ;
+/// - data : documents / sauvegarde (indigo modéré).
+/// Jamais « pour faire joli » : une couleur = un sens.
 @immutable
 class MesKmColors extends ThemeExtension<MesKmColors> {
   const MesKmColors({
@@ -23,6 +27,15 @@ class MesKmColors extends ThemeExtension<MesKmColors> {
     required this.vacation,
     required this.vacationContainer,
     required this.onVacationContainer,
+    required this.mobility,
+    required this.mobilityContainer,
+    required this.onMobilityContainer,
+    required this.favorite,
+    required this.favoriteContainer,
+    required this.onFavoriteContainer,
+    required this.data,
+    required this.dataContainer,
+    required this.onDataContainer,
   });
 
   final Color success;
@@ -36,6 +49,15 @@ class MesKmColors extends ThemeExtension<MesKmColors> {
   final Color vacation;
   final Color vacationContainer;
   final Color onVacationContainer;
+  final Color mobility;
+  final Color mobilityContainer;
+  final Color onMobilityContainer;
+  final Color favorite;
+  final Color favoriteContainer;
+  final Color onFavoriteContainer;
+  final Color data;
+  final Color dataContainer;
+  final Color onDataContainer;
 
   static const light = MesKmColors(
     success: AppPalette.success,
@@ -49,6 +71,15 @@ class MesKmColors extends ThemeExtension<MesKmColors> {
     vacation: AppPalette.vacation,
     vacationContainer: AppPalette.vacationContainer,
     onVacationContainer: AppPalette.onVacationContainer,
+    mobility: AppPalette.mobility,
+    mobilityContainer: AppPalette.mobilityContainer,
+    onMobilityContainer: AppPalette.onMobilityContainer,
+    favorite: AppPalette.favorite,
+    favoriteContainer: AppPalette.favoriteContainer,
+    onFavoriteContainer: AppPalette.onFavoriteContainer,
+    data: AppPalette.data,
+    dataContainer: AppPalette.dataContainer,
+    onDataContainer: AppPalette.onDataContainer,
   );
 
   static const dark = MesKmColors(
@@ -63,6 +94,15 @@ class MesKmColors extends ThemeExtension<MesKmColors> {
     vacation: AppPalette.vacationDark,
     vacationContainer: AppPalette.vacationContainerDark,
     onVacationContainer: AppPalette.onVacationContainerDark,
+    mobility: AppPalette.mobilityDark,
+    mobilityContainer: AppPalette.mobilityContainerDark,
+    onMobilityContainer: AppPalette.onMobilityContainerDark,
+    favorite: AppPalette.favoriteDark,
+    favoriteContainer: AppPalette.favoriteContainerDark,
+    onFavoriteContainer: AppPalette.onFavoriteContainerDark,
+    data: AppPalette.dataDark,
+    dataContainer: AppPalette.dataContainerDark,
+    onDataContainer: AppPalette.onDataContainerDark,
   );
 
   @override
@@ -78,6 +118,15 @@ class MesKmColors extends ThemeExtension<MesKmColors> {
     Color? vacation,
     Color? vacationContainer,
     Color? onVacationContainer,
+    Color? mobility,
+    Color? mobilityContainer,
+    Color? onMobilityContainer,
+    Color? favorite,
+    Color? favoriteContainer,
+    Color? onFavoriteContainer,
+    Color? data,
+    Color? dataContainer,
+    Color? onDataContainer,
   }) =>
       MesKmColors(
         success: success ?? this.success,
@@ -92,6 +141,17 @@ class MesKmColors extends ThemeExtension<MesKmColors> {
         vacationContainer: vacationContainer ?? this.vacationContainer,
         onVacationContainer:
             onVacationContainer ?? this.onVacationContainer,
+        mobility: mobility ?? this.mobility,
+        mobilityContainer: mobilityContainer ?? this.mobilityContainer,
+        onMobilityContainer:
+            onMobilityContainer ?? this.onMobilityContainer,
+        favorite: favorite ?? this.favorite,
+        favoriteContainer: favoriteContainer ?? this.favoriteContainer,
+        onFavoriteContainer:
+            onFavoriteContainer ?? this.onFavoriteContainer,
+        data: data ?? this.data,
+        dataContainer: dataContainer ?? this.dataContainer,
+        onDataContainer: onDataContainer ?? this.onDataContainer,
       );
 
   @override
@@ -111,6 +171,17 @@ class MesKmColors extends ThemeExtension<MesKmColors> {
       vacationContainer: mix(vacationContainer, other.vacationContainer),
       onVacationContainer:
           mix(onVacationContainer, other.onVacationContainer),
+      mobility: mix(mobility, other.mobility),
+      mobilityContainer: mix(mobilityContainer, other.mobilityContainer),
+      onMobilityContainer:
+          mix(onMobilityContainer, other.onMobilityContainer),
+      favorite: mix(favorite, other.favorite),
+      favoriteContainer: mix(favoriteContainer, other.favoriteContainer),
+      onFavoriteContainer:
+          mix(onFavoriteContainer, other.onFavoriteContainer),
+      data: mix(data, other.data),
+      dataContainer: mix(dataContainer, other.dataContainer),
+      onDataContainer: mix(onDataContainer, other.onDataContainer),
     );
   }
 }

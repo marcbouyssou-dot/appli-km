@@ -5,6 +5,7 @@ import '../../domain/logic/fiscal_estimator.dart';
 import '../../domain/models/vehicle.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/tokens.dart';
+import '../../theme/vehicle_accent.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/period_selector.dart';
@@ -216,6 +217,17 @@ class _StatisticsView extends ConsumerWidget {
                       ),
                     ),
                     minTileHeight: AppSizes.minTouchTarget + 8,
+                    // Repère STABLE par véhicule (déterministe sur l'id ;
+                    // gris neutre pour « sans véhicule »).
+                    leading: Container(
+                      width: 4,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: vehicleAccent(theme, stat.vehicleId),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    minLeadingWidth: AppSpacing.m,
                     title: Text(
                       stat.isArchived
                           ? '${stat.label} (archivé)'

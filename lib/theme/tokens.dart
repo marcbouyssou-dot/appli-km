@@ -33,6 +33,22 @@ abstract final class AppPalette {
   static const Color vacationContainer = Color(0xFFD3ECEA);
   static const Color onVacationContainer = Color(0xFF0E3B3A);
 
+  // --- Accents de CONTENU (UX-001C) : maximum trois, chacun a un sens. ---
+  /// Mobilité / véhicule : turquoise doux.
+  static const Color mobility = Color(0xFF0E7490);
+  static const Color mobilityContainer = Color(0xFFD3EEF5);
+  static const Color onMobilityContainer = Color(0xFF0A4A5C);
+
+  /// Favori / récurrence : orange chaud doux.
+  static const Color favorite = Color(0xFFC2611B);
+  static const Color favoriteContainer = Color(0xFFFCE8D8);
+  static const Color onFavoriteContainer = Color(0xFF743A0C);
+
+  /// Donnée (documents, sauvegarde) : indigo très modéré.
+  static const Color data = Color(0xFF5456C8);
+  static const Color dataContainer = Color(0xFFE4E4F9);
+  static const Color onDataContainer = Color(0xFF32339B);
+
   static const Color background = Color(0xFFFBFCFE); // quasi blanc, très légèrement bleuté
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceAlt = Color(0xFFEAEEF6);
@@ -66,6 +82,19 @@ abstract final class AppPalette {
   static const Color vacationDark = Color(0xFF86CFCC);
   static const Color vacationContainerDark = Color(0xFF1C4A49);
   static const Color onVacationContainerDark = Color(0xFFBDEEEB);
+
+  // Accents de contenu — sombres désaturés, texte/icône plus clairs.
+  static const Color mobilityDark = Color(0xFF6CC7DE);
+  static const Color mobilityContainerDark = Color(0xFF133E4B);
+  static const Color onMobilityContainerDark = Color(0xFFBEE8F2);
+
+  static const Color favoriteDark = Color(0xFFF0A86A);
+  static const Color favoriteContainerDark = Color(0xFF462D12);
+  static const Color onFavoriteContainerDark = Color(0xFFF8DFC6);
+
+  static const Color dataDark = Color(0xFFA9AAF2);
+  static const Color dataContainerDark = Color(0xFF2E2F5E);
+  static const Color onDataContainerDark = Color(0xFFDFDFFA);
 
   static const Color backgroundDark = Color(0xFF111318);
   static const Color surfaceDark = Color(0xFF1A1D23);
