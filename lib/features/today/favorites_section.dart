@@ -9,6 +9,7 @@ import '../day/day_controller.dart';
 import '../vacations/vacation_guard.dart';
 import 'favorite_form_sheet.dart';
 import 'favorites_controller.dart';
+import 'manage_favorites_screen.dart';
 
 /// Section « Trajets favoris », disponible sur TOUTE journée éditable
 /// (aujourd'hui comme journée passée).
@@ -44,6 +45,16 @@ class FavoritesSection extends ConsumerWidget {
         duration: const Duration(milliseconds: 800),
         behavior: SnackBarBehavior.floating,
       ));
+  }
+
+  /// Raccourci « Modifier » : ouvre la gestion globale directement sur la
+  /// fiche de CE favori (les favoris sont globaux — la date consultée n'a
+  /// aucun effet sur le modèle).
+  void _editFavorite(BuildContext context, FavoriteTrip favorite) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) =>
+          ManageFavoritesScreen(initialFavoriteId: favorite.id),
+    ));
   }
 
   Future<void> _createFavorite(BuildContext context, WidgetRef ref) async {
@@ -97,36 +108,61 @@ class FavoritesSection extends ConsumerWidget {
           child: Column(
             children: [
               for (final favorite in favorites)
-                // Toute la ligne est la cible tactile : aucun petit « + »
-                // à viser (règle produit KM-004C).
-                ListTile(
-                  key: Key('favorite-${favorite.id}'),
-                  onTap: () => _useFavorite(context, ref, favorite),
-                  minTileHeight: AppSizes.minTouchTarget + 12,
-                  title: Text(
-                    favorite.label,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  subtitle: _subtitle(favorite),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.m,
-                      vertical: AppSpacing.s,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(AppRadius.m),
-                    ),
-                    child: Text(
-                      '+${formatKm(favorite.distanceKm)}',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
+                // Deux intentions, deux zones nettement séparées :
+                // la ligne = AJOUTER le trajet ; « Modifier » = éditer le
+                // MODÈLE favori (raccourci vers sa fiche globale).
+                Row(
+                  children: [
+                    Expanded(
+                      child: ListTile(
+                        key: Key('favorite-${favorite.id}'),
+                        onTap: () => _useFavorite(context, ref, favorite),
+                        minTileHeight: AppSizes.minTouchTarget + 12,
+                        title: Text(
+                          favorite.label,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        subtitle: _subtitle(favorite),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.m,
+                            vertical: AppSpacing.s,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.m),
+                          ),
+                          child: Text(
+                            '+${formatKm(favorite.distanceKm)}',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    Padding(
+                      padding:
+                          const EdgeInsets.only(right: AppSpacing.s),
+                      child: TextButton.icon(
+                        key: Key('edit-favorite-${favorite.id}'),
+                        onPressed: () => _editFavorite(context, favorite),
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        label: const Text('Modifier'),
+                        style: TextButton.styleFrom(
+                          minimumSize:
+                              const Size(0, AppSizes.minTouchTarget),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.m,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               // Créer reste possible EN CONTEXTE même quand des favoris
               // existent (régression KM-008A : le retrait de « Gérer »

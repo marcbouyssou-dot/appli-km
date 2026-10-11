@@ -275,6 +275,49 @@ void main() {
   });
 
   testWidgets(
+      'raccourci Modifier depuis une journée passée : favori global modifié '
+      'partout, la date consultée n’a aucun effet', (tester) async {
+    await tester.runAsync(
+        () => SembastFavoriteTripRepository(database.db).put(FavoriteTrip(
+              id: 'fav-1',
+              label: 'Travail',
+              distanceKm: 70,
+              sortOrder: 0,
+            )));
+    await pumpOnCalendar(tester);
+
+    await tester.tap(cell('2026-10-05'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('edit-favorite-fav-1')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('edit-favorite-fav-1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Modifier le favori'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
+      '72',
+    );
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+
+    // Retour gestion -> détail -> calendrier -> Aujourd'hui.
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('+72 km'), findsOneWidget); // journée passée à jour
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.today_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('+72 km'), findsOneWidget); // global, aussi Aujourd'hui
+
+    // Aucune date passée n'a reçu de Trip par le raccourci.
+    final trips = await tester
+        .runAsync(() => SembastTripRepository(database.db).getAll());
+    expect(trips, isEmpty);
+  });
+
+  testWidgets(
       'suppression globale (via Plus) : le favori disparaît des journées '
       'passées, les Trips historiques restent', (tester) async {
     await tester.runAsync(

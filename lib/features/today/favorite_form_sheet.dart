@@ -26,22 +26,31 @@ class FavoriteFormResult {
 /// Feuille de création/modification d'un favori.
 /// La distance saisie est la distance COMPTABILISÉE ajoutée à chaque
 /// utilisation (déjà totale si A/R) — même sémantique que les trajets.
+///
+/// [onDeleteRequested] (édition seulement) : la fiche propose aussi
+/// « Supprimer le favori » ; le callback mène la confirmation et retourne
+/// true si la suppression a eu lieu — la feuille se ferme alors.
 Future<FavoriteFormResult?> showFavoriteFormSheet(
   BuildContext context, {
   FavoriteTrip? initial,
+  Future<bool> Function()? onDeleteRequested,
 }) {
   return showModalBottomSheet<FavoriteFormResult>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (context) => _FavoriteFormSheet(initial: initial),
+    builder: (context) => _FavoriteFormSheet(
+      initial: initial,
+      onDeleteRequested: onDeleteRequested,
+    ),
   );
 }
 
 class _FavoriteFormSheet extends StatefulWidget {
-  const _FavoriteFormSheet({this.initial});
+  const _FavoriteFormSheet({this.initial, this.onDeleteRequested});
 
   final FavoriteTrip? initial;
+  final Future<bool> Function()? onDeleteRequested;
 
   @override
   State<_FavoriteFormSheet> createState() => _FavoriteFormSheetState();
@@ -212,6 +221,23 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
               ),
               child: const Text('Annuler'),
             ),
+            if (isEditing && widget.onDeleteRequested != null)
+              TextButton.icon(
+                key: const Key('delete-favorite-from-form'),
+                onPressed: () async {
+                  final deleted = await widget.onDeleteRequested!();
+                  if (deleted && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Supprimer le favori'),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                  minimumSize:
+                      const Size.fromHeight(AppSizes.minTouchTarget),
+                ),
+              ),
           ],
         ),
       ),

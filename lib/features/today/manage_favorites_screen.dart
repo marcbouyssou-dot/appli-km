@@ -12,10 +12,25 @@ import 'favorites_controller.dart';
 /// Réorganisation par flèches haut/bas : fiable au toucher sur iPhone
 /// (le drag & drop web/Safari ne l'est pas assez), et impossible à
 /// déclencher par accident.
-class ManageFavoritesScreen extends ConsumerWidget {
-  const ManageFavoritesScreen({super.key});
+///
+/// [initialFavoriteId] : ouvre directement la fiche d'édition de ce favori
+/// (raccourci « Modifier » depuis une journée) — même écran, même
+/// formulaire, aucune logique dupliquée.
+class ManageFavoritesScreen extends ConsumerStatefulWidget {
+  const ManageFavoritesScreen({super.key, this.initialFavoriteId});
 
-  Future<void> _create(BuildContext context, WidgetRef ref) async {
+  final String? initialFavoriteId;
+
+  @override
+  ConsumerState<ManageFavoritesScreen> createState() =>
+      _ManageFavoritesScreenState();
+}
+
+class _ManageFavoritesScreenState
+    extends ConsumerState<ManageFavoritesScreen> {
+  bool _autoOpenHandled = false;
+
+  Future<void> _create() async {
     final result = await showFavoriteFormSheet(context);
     if (result == null) return;
     await ref.read(favoritesControllerProvider.notifier).create(
@@ -28,12 +43,12 @@ class ManageFavoritesScreen extends ConsumerWidget {
         );
   }
 
-  Future<void> _edit(
-    BuildContext context,
-    WidgetRef ref,
-    FavoriteTrip favorite,
-  ) async {
-    final result = await showFavoriteFormSheet(context, initial: favorite);
+  Future<void> _edit(FavoriteTrip favorite) async {
+    final result = await showFavoriteFormSheet(
+      context,
+      initial: favorite,
+      onDeleteRequested: () => _delete(favorite),
+    );
     if (result == null) return;
     await ref.read(favoritesControllerProvider.notifier).updateFavorite(
           favorite,
@@ -46,11 +61,8 @@ class ManageFavoritesScreen extends ConsumerWidget {
         );
   }
 
-  Future<void> _delete(
-    BuildContext context,
-    WidgetRef ref,
-    FavoriteTrip favorite,
-  ) async {
+  /// Confirmation + suppression. Retourne true si supprimé.
+  Future<bool> _delete(FavoriteTrip favorite) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -72,18 +84,41 @@ class ManageFavoritesScreen extends ConsumerWidget {
         ],
       ),
     );
-    if (confirmed == true) {
-      await ref
-          .read(favoritesControllerProvider.notifier)
-          .deleteFavorite(favorite.id);
+    if (confirmed != true) return false;
+    await ref
+        .read(favoritesControllerProvider.notifier)
+        .deleteFavorite(favorite.id);
+    return true;
+  }
+
+  void _maybeAutoOpen(List<FavoriteTrip> favorites) {
+    if (_autoOpenHandled || widget.initialFavoriteId == null) return;
+    _autoOpenHandled = true;
+
+    FavoriteTrip? target;
+    for (final favorite in favorites) {
+      if (favorite.id == widget.initialFavoriteId) {
+        target = favorite;
+        break;
+      }
     }
+    if (target == null) return;
+
+    final favorite = target;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _edit(favorite);
+    });
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final favoritesState = ref.watch(favoritesControllerProvider);
     final favorites = favoritesState.value ?? const <FavoriteTrip>[];
+
+    if (favoritesState.hasValue) {
+      _maybeAutoOpen(favorites);
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Trajets favoris')),
@@ -117,7 +152,7 @@ class ManageFavoritesScreen extends ConsumerWidget {
                 margin: const EdgeInsets.only(bottom: AppSpacing.m),
                 child: ListTile(
                   key: Key('manage-favorite-${favorites[index].id}'),
-                  onTap: () => _edit(context, ref, favorites[index]),
+                  onTap: () => _edit(favorites[index]),
                   minTileHeight: AppSizes.minTouchTarget + 8,
                   title: Text(
                     favorites[index].label,
@@ -149,8 +184,7 @@ class ManageFavoritesScreen extends ConsumerWidget {
                       IconButton(
                         icon: const Icon(Icons.delete_outline),
                         tooltip: 'Supprimer',
-                        onPressed: () =>
-                            _delete(context, ref, favorites[index]),
+                        onPressed: () => _delete(favorites[index]),
                       ),
                     ],
                   ),
@@ -158,7 +192,7 @@ class ManageFavoritesScreen extends ConsumerWidget {
               ),
             const SizedBox(height: AppSpacing.s),
             FilledButton.tonalIcon(
-              onPressed: () => _create(context, ref),
+              onPressed: _create,
               icon: const Icon(Icons.add),
               label: const Text('Nouveau favori'),
               style: FilledButton.styleFrom(

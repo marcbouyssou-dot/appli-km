@@ -493,6 +493,110 @@ void main() {
       expect(find.text('Cabinet ↔ EHPAD'), findsOneWidget);
     });
 
+    group('raccourci Modifier (KM-008C)', () {
+      testWidgets(
+          'action Modifier explicite, cible >= 44 px ; hit-testing strict : '
+          'Modifier n’ajoute RIEN, la ligne n’édite RIEN',
+          (tester) async {
+        await seedFavorite(tester, km: 70, label: 'Travail');
+        await pumpApp(tester);
+
+        final editButton = find.byKey(const Key('edit-favorite-fav-1'));
+        expect(editButton, findsOneWidget);
+        expect(find.text('Modifier'), findsOneWidget);
+        expect(tester.getSize(editButton).height,
+            greaterThanOrEqualTo(44));
+
+        // Tap Modifier : ZÉRO Trip ajouté, fiche du bon favori ouverte.
+        await tester.tap(editButton);
+        await tester.pumpAndSettle();
+        expect(find.text('Modifier le favori'), findsOneWidget);
+        final fieldLabel = tester
+            .widget<TextField>(
+                find.widgetWithText(TextField, 'Nom du favori'))
+            .controller!
+            .text;
+        expect(fieldLabel, 'Travail');
+        final trips = await tester
+            .runAsync(() => SembastTripRepository(database.db).getAll());
+        expect(trips, isEmpty, reason: 'Modifier ne doit jamais ajouter');
+
+        // Fermer la fiche + revenir : tap sur la LIGNE => exactement un
+        // Trip, et aucune édition ouverte.
+        await tester.tap(find.text('Annuler'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('favorite-fav-1')));
+        await tester.pumpAndSettle();
+        await flushSnackBar(tester);
+        final afterRow = await tester
+            .runAsync(() => SembastTripRepository(database.db).getAll());
+        expect(afterRow, hasLength(1));
+        expect(find.text('Modifier le favori'), findsNothing);
+      });
+
+      testWidgets(
+          'Modifier 70 -> 72 : retour journée +72, ancien Trip reste 70',
+          (tester) async {
+        await seedFavorite(tester, km: 70, label: 'Travail');
+        await pumpApp(tester);
+
+        // Un Trip historique à 70 d'abord.
+        await tester.tap(find.byKey(const Key('favorite-fav-1')));
+        await tester.pumpAndSettle();
+        await flushSnackBar(tester);
+        expectTotal(tester, '70');
+
+        await tester.tap(find.byKey(const Key('edit-favorite-fav-1')));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
+          '72',
+        );
+        await tester.tap(find.text('Enregistrer'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('+72 km'), findsOneWidget);
+        expect(find.text('70 km'), findsOneWidget,
+            reason: 'le Trip historique reste à 70');
+        expectTotal(tester, '70');
+      });
+
+      testWidgets(
+          'Supprimer depuis la fiche : confirmation, favori disparu, '
+          'Trip historique intact, état vide rétabli', (tester) async {
+        await seedFavorite(tester, km: 70, label: 'Travail');
+        await pumpApp(tester);
+
+        await tester.tap(find.byKey(const Key('favorite-fav-1')));
+        await tester.pumpAndSettle();
+        await flushSnackBar(tester);
+
+        await tester.tap(find.byKey(const Key('edit-favorite-fav-1')));
+        await tester.pumpAndSettle();
+        await tester
+            .tap(find.byKey(const Key('delete-favorite-from-form')));
+        await tester.pumpAndSettle();
+        expect(find.text('Supprimer ce favori ?'), findsOneWidget);
+        expect(find.textContaining('ne seront pas supprimés'),
+            findsOneWidget);
+
+        await tester.tap(find.text('Supprimer'));
+        await tester.pumpAndSettle();
+        expect(find.text('Aucun favori pour le moment.'), findsOneWidget);
+
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+        expect(find.text('Créer un trajet favori'), findsOneWidget);
+        expect(find.text('70 km'), findsOneWidget,
+            reason: 'Trip historique intact');
+      });
+    });
+
     testWidgets('création d’un favori depuis l’invitation',
         (tester) async {
       await pumpApp(tester);
