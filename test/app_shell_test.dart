@@ -110,6 +110,33 @@ void main() {
     expect(find.text('km aujourd’hui'), findsOneWidget);
   });
 
+  testWidgets(
+      'onglets paresseux : seuls les onglets visités sont construits, '
+      'la navigation répond dès l’affichage du shell', (tester) async {
+    await pumpApp(tester);
+
+    // Au démarrage : Aujourd'hui construit, Calendrier non (pas de travail
+    // inutile avant la première interaction).
+    expect(find.text('km aujourd’hui'), findsOneWidget);
+    expect(
+      find.byKey(const Key('cal-prev'), skipOffstage: false),
+      findsNothing,
+    );
+
+    // Premier tap immédiatement après l'affichage : il répond.
+    await tester.tap(find.byIcon(Icons.calendar_month_outlined));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('cal-prev')), findsOneWidget);
+
+    // Une fois visité, l'onglet garde son état (toujours construit).
+    await tester.tap(find.byIcon(Icons.today_outlined));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('cal-prev'), skipOffstage: false),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('le thème suit le mode système (clair/sombre)', (tester) async {
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);

@@ -66,6 +66,13 @@
       font-size: 22px;
       font-weight: 700;
       color: #007AFF;
+      /* Pulsation : l'état de chargement VIVANT est reconnaissable,
+         jamais une interface qui semble prête mais morte. */
+      animation: splash-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes splash-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
     @media (prefers-color-scheme: dark) {
       html, body { background-color: #121318; }
@@ -81,6 +88,22 @@
       if (splash) { splash.remove(); }
     });
   </script>
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- Bootstrap personnalisé : le loader Flutter ATTEND par défaut
+       l'activation/mise à jour du service worker (plafond 4000 ms) avant
+       même de télécharger le moteur — principale latence au lancement de
+       la PWA (surtout après une mise à jour de version). On plafonne cette
+       attente à 800 ms : au-delà, l'app démarre immédiatement (réseau ou
+       cache HTTP) et le service worker finit de s'activer en arrière-plan,
+       sans perdre le fonctionnement hors ligne des lancements suivants. -->
+  <script>
+    {{flutter_js}}
+    {{flutter_build_config}}
+    _flutter.loader.load({
+      serviceWorkerSettings: {
+        serviceWorkerVersion: {{flutter_service_worker_version}},
+        timeoutMillis: 800,
+      },
+    });
+  </script>
 </body>
 </html>

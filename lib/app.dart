@@ -81,6 +81,11 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
 
+  // Onglets paresseux : seul Aujourd'hui est construit au démarrage,
+  // les autres à leur première visite (moins de travail avant la première
+  // interaction ; l'IndexedStack conserve ensuite leur état).
+  final Set<int> _builtTabs = {0};
+
   static const _screens = [
     TodayScreen(),
     CalendarScreen(),
@@ -94,13 +99,18 @@ class _HomeShellState extends State<HomeShell> {
       body: SafeArea(
         child: IndexedStack(
           index: _currentIndex,
-          children: _screens,
+          children: [
+            for (var i = 0; i < _screens.length; i++)
+              _builtTabs.contains(i) ? _screens[i] : const SizedBox.shrink(),
+          ],
         ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) =>
-            setState(() => _currentIndex = index),
+        onDestinationSelected: (index) => setState(() {
+          _currentIndex = index;
+          _builtTabs.add(index);
+        }),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.today_outlined),
