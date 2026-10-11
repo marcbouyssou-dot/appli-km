@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:mes_km/app.dart';
 import 'package:mes_km/app/providers.dart';
 import 'package:mes_km/data/local/app_database.dart';
+import 'package:mes_km/features/today/editable_day_total.dart';
 import 'package:sembast/sembast_memory.dart' hide Finder;
 
 void main() {
@@ -37,7 +38,9 @@ void main() {
 
     expect(find.byType(NavigationBar), findsOneWidget);
     // La grande valeur éditable affiche 0 pour une journée vide.
-    expect(find.text('0'), findsOneWidget);
+    final totalField =
+        tester.widget<TextField>(find.byKey(dayTotalFieldKey));
+    expect(totalField.controller!.text, '0');
     expect(find.text('km aujourd’hui'), findsOneWidget);
   });
 

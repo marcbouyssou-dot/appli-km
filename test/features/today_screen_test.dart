@@ -78,6 +78,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Vérifie la valeur affichée par le compteur (texte du champ ;
+  /// `find.text` matcherait aussi le filigrane hint, toujours monté).
+  void expectTotal(WidgetTester tester, String value) {
+    final field = tester.widget<TextField>(find.byKey(dayTotalFieldKey));
+    expect(field.controller!.text, value);
+  }
+
   bool totalFieldHasFocus(WidgetTester tester) {
     final editable = tester.widget<EditableText>(find.descendant(
       of: find.byKey(dayTotalFieldKey),
@@ -93,7 +100,7 @@ void main() {
 
     await pumpApp(tester);
 
-    expect(find.text('69'), findsOneWidget); // grande valeur éditable
+    expectTotal(tester, '69'); // grande valeur éditable
     expect(find.text('km aujourd’hui'), findsOneWidget);
   });
 
@@ -110,7 +117,8 @@ void main() {
 
   testWidgets(
       'UN SEUL tap au BORD de la carte (pas sur les chiffres) ouvre '
-      'l’édition et sélectionne la valeur', (tester) async {
+      'l’édition ; la première frappe remplace l’ancienne valeur',
+      (tester) async {
     await seedExtra(tester, 33);
     await pumpApp(tester);
     expect(totalFieldHasFocus(tester), isFalse);
@@ -120,26 +128,66 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(totalFieldHasFocus(tester), isTrue);
-    // Valeur entièrement sélectionnée : la première frappe remplace tout.
-    final field =
-        tester.widget<TextField>(find.byKey(dayTotalFieldKey));
-    final selection = field.controller!.selection;
-    expect(selection.start, 0);
-    expect(selection.end, field.controller!.text.length);
+    // Effet compteur : champ vidé (la frappe part de zéro, aucune sélection
+    // nécessaire), ancienne valeur affichée en filigrane.
+    final field = tester.widget<TextField>(find.byKey(dayTotalFieldKey));
+    expect(field.controller!.text, isEmpty);
+    expect(field.decoration?.hintText, '33');
+    expect(field.enableInteractiveSelection, isFalse);
+  });
+
+  testWidgets('la frappe s’affiche immédiatement en grand (87,5)',
+      (tester) async {
+    await seedExtra(tester, 33);
+    await pumpApp(tester);
+
+    await tester.tap(find.byKey(dayTotalCardKey));
+    await tester.pumpAndSettle();
+
+    // Pendant la frappe, AVANT la fin d'édition : la valeur est visible.
+    await tester.enterText(find.byKey(dayTotalFieldKey), '87,5');
+    await tester.pump();
+    expect(find.text('87,5'), findsOneWidget);
+
+    // Fin d'édition : commit.
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expectTotal(tester, '87,5');
+    final stored = await tester.runAsync(
+        () => SembastDayExtraRepository(database.db).getForDate(day));
+    expect(stored?.extraKm, 87.5);
+  });
+
+  testWidgets(
+      'édition abandonnée sans frappe : valeur conservée, rien d’écrit',
+      (tester) async {
+    await seedExtra(tester, 33);
+    await pumpApp(tester);
+
+    await tester.tap(find.byKey(dayTotalCardKey));
+    await tester.pumpAndSettle();
+    // Fin d'édition sans aucune frappe (champ resté vide).
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expectTotal(tester, '33');
+    final stored = await tester.runAsync(
+        () => SembastDayExtraRepository(database.db).getForDate(day));
+    expect(stored?.extraKm, 33);
   });
 
   testWidgets('RÉGRESSION recette : 33 km persistés => 0 via édition directe',
       (tester) async {
     await seedExtra(tester, 33);
     await pumpApp(tester);
-    expect(find.text('33'), findsOneWidget);
+    expectTotal(tester, '33');
 
     // Tap sur la carte (zone large), puis 0.
     await tester.tap(find.byKey(dayTotalCardKey));
     await tester.pumpAndSettle();
     await editTotal(tester, '0');
 
-    expect(find.text('0'), findsOneWidget);
+    expectTotal(tester, '0');
     expect(find.text('Autres kilomètres'), findsNothing);
     final stored = await tester.runAsync(
         () => SembastDayExtraRepository(database.db).getForDate(day));
@@ -151,7 +199,7 @@ void main() {
     await pumpApp(tester);
 
     await editTotal(tester, '87');
-    expect(find.text('87'), findsOneWidget);
+    expectTotal(tester, '87');
 
     await tester.tap(find.text('Calendrier'));
     await tester.pumpAndSettle();
@@ -167,7 +215,7 @@ void main() {
 
     await tester.tap(find.text('Aujourd’hui').last);
     await tester.pumpAndSettle();
-    expect(find.text('87'), findsOneWidget);
+    expectTotal(tester, '87');
   });
 
   testWidgets('le texte obsolète de l’ancienne feuille a disparu',
@@ -187,7 +235,7 @@ void main() {
 
     await editTotal(tester, '87');
 
-    expect(find.text('87'), findsOneWidget);
+    expectTotal(tester, '87');
     expect(find.text('Autres kilomètres'), findsOneWidget);
     expect(find.text('87 km'), findsOneWidget); // ligne autres kilomètres
 
@@ -201,7 +249,7 @@ void main() {
 
     await editTotal(tester, '24,5');
 
-    expect(find.text('24,5'), findsOneWidget);
+    expectTotal(tester, '24,5');
     final stored = await tester.runAsync(
         () => SembastDayExtraRepository(database.db).getForDate(day));
     expect(stored?.extraKm, 24.5);
@@ -213,11 +261,11 @@ void main() {
     await seedExtra(tester, 87);
 
     await pumpApp(tester);
-    expect(find.text('87'), findsOneWidget);
+    expectTotal(tester, '87');
 
     await editTotal(tester, '0');
 
-    expect(find.text('0'), findsOneWidget);
+    expectTotal(tester, '0');
     expect(find.text('Autres kilomètres'), findsNothing);
     expect(
       find.text('Aucun kilomètre enregistré aujourd’hui.'),
@@ -235,7 +283,7 @@ void main() {
     await seedTrip(tester, 't-2', 18);
 
     await pumpApp(tester);
-    expect(find.text('42'), findsOneWidget);
+    expectTotal(tester, '42');
 
     await editTotal(tester, '40');
 
@@ -243,7 +291,7 @@ void main() {
       find.text('Les trajets détaillés totalisent déjà 42 km.'),
       findsOneWidget,
     );
-    expect(find.text('42'), findsOneWidget); // valeur restaurée
+    expectTotal(tester, '42'); // valeur restaurée
     expect(find.text('24 km'), findsOneWidget);
     expect(find.text('18 km'), findsOneWidget);
 
@@ -259,7 +307,7 @@ void main() {
     await pumpApp(tester);
     await editTotal(tester, 'abc');
 
-    expect(find.text('87'), findsOneWidget);
+    expectTotal(tester, '87');
     final stored = await tester.runAsync(
         () => SembastDayExtraRepository(database.db).getForDate(day));
     expect(stored?.extraKm, 87);
@@ -280,7 +328,7 @@ void main() {
 
     expect(find.text('Trajets détaillés'), findsOneWidget);
     expect(find.text('24,5 km'), findsOneWidget); // ligne trajet
-    expect(find.text('24,5'), findsOneWidget); // grande valeur
+    expectTotal(tester, '24,5'); // grande valeur
   });
 
   testWidgets('décomposition : détaillés + autres kilomètres',
@@ -291,7 +339,7 @@ void main() {
 
     await pumpApp(tester);
 
-    expect(find.text('87'), findsOneWidget);
+    expectTotal(tester, '87');
     expect(find.text('Trajets détaillés'), findsOneWidget);
     expect(find.text('24 km'), findsOneWidget);
     expect(find.text('18 km'), findsOneWidget);
@@ -306,7 +354,7 @@ void main() {
     await seedExtra(tester, 45);
 
     await pumpApp(tester);
-    expect(find.text('87'), findsOneWidget);
+    expectTotal(tester, '87');
 
     // Supprime le trajet de 18 km (bouton de SA ligne, pas un index).
     final row18 = find.ancestor(
@@ -323,7 +371,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('18 km'), findsNothing);
-    expect(find.text('69'), findsOneWidget);
+    expectTotal(tester, '69');
     expect(find.text('45 km'), findsOneWidget); // extra intact
   });
 
@@ -343,7 +391,7 @@ void main() {
     expect(find.text('0'), findsNothing);
 
     await tester.pumpAndSettle();
-    expect(find.text('0'), findsOneWidget);
+    expectTotal(tester, '0');
   });
 
   testWidgets('erreur de lecture : message + réessayer, jamais de total',

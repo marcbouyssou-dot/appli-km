@@ -46,7 +46,11 @@ void main() {
       child: const MesKmApp(),
     ));
     await tester.pumpAndSettle();
-    expect(find.text('33'), findsOneWidget);
+    String totalText() => tester
+        .widget<TextField>(find.byKey(dayTotalFieldKey))
+        .controller!
+        .text;
+    expect(totalText(), '33');
 
     // Un seul tap au bord de la carte : focus immédiat.
     final cardRect = tester.getRect(find.byKey(dayTotalCardKey));
@@ -62,7 +66,7 @@ void main() {
     await tester.enterText(find.byKey(dayTotalFieldKey), '0');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
-    expect(find.text('0'), findsOneWidget);
+    expect(totalText(), '0');
     final stored = await tester.runAsync(
         () => SembastDayExtraRepository(database.db).getForDate(day));
     expect(stored, isNull);

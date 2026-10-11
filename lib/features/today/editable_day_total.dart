@@ -60,11 +60,10 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
 
   void _onFocusChanged() {
     if (_focusNode.hasFocus) {
-      // Tout sélectionner : la frappe remplace la valeur affichée.
-      _controller.selection = TextSelection(
-        baseOffset: 0,
-        extentOffset: _controller.text.length,
-      );
+      // Effet « compteur » : le champ se vide au focus, l'ancienne valeur
+      // reste visible en filigrane (hint) et la première frappe la remplace
+      // naturellement — sans sélection bleue ni poignées iOS.
+      _controller.clear();
     } else {
       _commit();
     }
@@ -80,7 +79,8 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
     try {
       final value = parseKmInput(_controller.text);
       if (value == null || value < 0) {
-        // Saisie vide ou invalide : on restaure, sans rien écrire.
+        // Édition abandonnée (champ vide) ou saisie invalide :
+        // on restaure la valeur courante, sans rien écrire.
         _restore();
         return;
       }
@@ -122,6 +122,10 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final valueStyle = theme.textTheme.displayLarge?.copyWith(
+      fontWeight: FontWeight.w800,
+      color: theme.colorScheme.primary,
+    );
 
     // TOUTE la carte est tactile : pas besoin de viser les chiffres.
     return Card(
@@ -145,13 +149,25 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
                     const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _focusNode.unfocus(),
-                style: theme.textTheme.displayLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: theme.colorScheme.primary,
-                ),
-                decoration: const InputDecoration(
+                // Aspect compteur : pas de sélection interactive (donc pas
+                // de poignées ni de surlignage), pas de suggestions.
+                enableInteractiveSelection: false,
+                autocorrect: false,
+                enableSuggestions: false,
+                cursorColor: theme.colorScheme.primary,
+                cursorWidth: 3,
+                cursorRadius: const Radius.circular(2),
+                style: valueStyle,
+                decoration: InputDecoration(
                   isCollapsed: true,
                   border: InputBorder.none,
+                  // Pendant l'édition (champ vidé), l'ancienne valeur reste
+                  // affichée en filigrane, même taille, même place.
+                  hintText: formatKmValue(widget.totalKm),
+                  hintStyle: valueStyle?.copyWith(
+                    color: theme.colorScheme.primary
+                        .withValues(alpha: 0.30),
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.s),
