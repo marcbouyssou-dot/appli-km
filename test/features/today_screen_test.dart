@@ -574,9 +574,12 @@ void main() {
   });
 
   group('effacer la journée', () {
-    testWidgets('journée vide : action absente', (tester) async {
+    testWidgets('journée vide : action absente, aucun menu « … »',
+        (tester) async {
       await pumpApp(tester);
-      expect(find.byKey(const Key('day-menu')), findsNothing);
+      expect(find.text('Effacer la journée'), findsNothing);
+      expect(find.byKey(const Key('clear-day-button')), findsNothing);
+      expect(find.byIcon(Icons.more_horiz), findsNothing);
     });
 
     testWidgets(
@@ -596,9 +599,13 @@ void main() {
       await pumpApp(tester);
       expectTotal(tester, '75');
 
-      await tester.tap(find.byKey(const Key('day-menu')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Effacer la journée'));
+      // L'action explicite est visible (texte, pas une icône seule) et
+      // toute sa zone est tactile : tap au bord du bouton.
+      expect(find.text('Effacer la journée'), findsOneWidget);
+      final buttonRect =
+          tester.getRect(find.byKey(const Key('clear-day-button')));
+      expect(buttonRect.height, greaterThanOrEqualTo(48));
+      await tester.tapAt(buttonRect.topLeft + const Offset(6, 6));
       await tester.pumpAndSettle();
       expect(find.text('Effacer cette journée ?'), findsOneWidget);
 
@@ -608,7 +615,7 @@ void main() {
       expectTotal(tester, '0');
       expect(find.text('Trajets détaillés'), findsNothing);
       expect(find.text('Autres kilomètres'), findsNothing);
-      expect(find.byKey(const Key('day-menu')), findsNothing);
+      expect(find.text('Effacer la journée'), findsNothing);
       // Les favoris restent présents et utilisables.
       expect(find.text('Cabinet ↔ EHPAD'), findsOneWidget);
 
@@ -625,9 +632,7 @@ void main() {
       await seedExtra(tester, 33);
 
       await pumpApp(tester);
-      await tester.tap(find.byKey(const Key('day-menu')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Effacer la journée'));
+      await tester.tap(find.byKey(const Key('clear-day-button')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Annuler'));
       await tester.pumpAndSettle();

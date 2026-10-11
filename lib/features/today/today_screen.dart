@@ -141,6 +141,10 @@ class _TodayView extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Effacer'),
           ),
         ],
@@ -170,35 +174,7 @@ class _TodayView extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Expanded(child: ScreenTitle('Aujourd’hui')),
-            // Action secondaire discrète : visible seulement si la journée
-            // contient des kilomètres (opération destructive explicite).
-            if (!today.isEmpty)
-              PopupMenuButton<String>(
-                key: const Key('day-menu'),
-                icon: const Icon(Icons.more_horiz),
-                tooltip: 'Options de la journée',
-                onSelected: (value) {
-                  if (value == 'clear') {
-                    _confirmClearDay(context, ref);
-                  }
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: 'clear',
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.delete_sweep_outlined),
-                      title: Text('Effacer la journée'),
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
+        const ScreenTitle('Aujourd’hui'),
         Text(
           dateText[0].toUpperCase() + dateText.substring(1),
           style: theme.textTheme.titleMedium?.copyWith(
@@ -291,6 +267,31 @@ class _TodayView extends ConsumerWidget {
               subtitle: const Text(
                 'Kilomètres non détaillés — s’ajustent en modifiant '
                 'le total du jour.',
+              ),
+            ),
+          ),
+        ],
+
+        // Action secondaire explicite : effacer toute la journée.
+        // Discrète (couleur neutre, en fin de contenu), texte + icône,
+        // grande cible tactile ; la confirmation protège l'action.
+        if (!today.isEmpty) ...[
+          const SizedBox(height: AppSpacing.l),
+          Center(
+            child: TextButton.icon(
+              key: const Key('clear-day-button'),
+              onPressed: () => _confirmClearDay(context, ref),
+              icon: const Icon(Icons.restart_alt),
+              label: const Text('Effacer la journée'),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.onSurfaceVariant,
+                minimumSize: const Size(
+                  AppSizes.minTouchTarget * 3,
+                  AppSizes.minTouchTarget,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                ),
               ),
             ),
           ),
