@@ -1,4 +1,66 @@
+import '../models/civil_date.dart';
 import '../models/vacation_period.dart';
+
+/// Une date est-elle couverte par l'une des périodes de congés ?
+/// (JOUR VIDE ≠ CONGÉ : seul ce statut explicite compte.)
+bool isVacationDate(Iterable<VacationPeriod> periods, CivilDate date) =>
+    periods.any((period) => period.contains(date));
+
+/// Retire une date d'un ensemble de périodes de congés. Fonction pure.
+///
+/// - période d'un seul jour -> supprimée ;
+/// - retrait du début -> start + 1 ;
+/// - retrait de la fin -> end - 1 ;
+/// - retrait du milieu -> période divisée : la première moitié conserve
+///   l'id d'origine, la seconde reçoit un id fourni par [newIdForSplit]
+///   (généré par la couche application, jamais par le domaine).
+List<VacationPeriod> removeDateFromPeriods(
+  Iterable<VacationPeriod> periods,
+  CivilDate date, {
+  required String Function() newIdForSplit,
+}) {
+  final result = <VacationPeriod>[];
+
+  for (final period in periods) {
+    if (!period.contains(date)) {
+      result.add(period);
+      continue;
+    }
+    if (period.startDate == period.endDate) {
+      continue; // jour unique : la période disparaît
+    }
+    if (date == period.startDate) {
+      result.add(VacationPeriod(
+        id: period.id,
+        startDate: date.addDays(1),
+        endDate: period.endDate,
+        label: period.label,
+      ));
+    } else if (date == period.endDate) {
+      result.add(VacationPeriod(
+        id: period.id,
+        startDate: period.startDate,
+        endDate: date.addDays(-1),
+        label: period.label,
+      ));
+    } else {
+      result.add(VacationPeriod(
+        id: period.id,
+        startDate: period.startDate,
+        endDate: date.addDays(-1),
+        label: period.label,
+      ));
+      result.add(VacationPeriod(
+        id: newIdForSplit(),
+        startDate: date.addDays(1),
+        endDate: period.endDate,
+        label: period.label,
+      ));
+    }
+  }
+
+  return List.unmodifiable(result);
+}
 
 /// Fusionne les périodes de congés qui se chevauchent ou se touchent
 /// directement (ex. 1–5 août + 6–10 août => 1–10 août).

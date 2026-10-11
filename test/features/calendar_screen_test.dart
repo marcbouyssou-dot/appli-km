@@ -8,10 +8,12 @@ import 'package:mes_km/data/local/app_database.dart';
 import 'package:mes_km/data/local/sembast_day_extra_repository.dart';
 import 'package:mes_km/data/local/sembast_favorite_trip_repository.dart';
 import 'package:mes_km/data/local/sembast_trip_repository.dart';
+import 'package:mes_km/data/local/sembast_vacation_repository.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
 import 'package:mes_km/domain/models/favorite_trip.dart';
 import 'package:mes_km/domain/models/trip.dart';
+import 'package:mes_km/domain/models/vacation_period.dart';
 import 'package:mes_km/features/day/editable_day_total.dart';
 import 'package:sembast/sembast_memory.dart' hide Finder;
 
@@ -315,6 +317,139 @@ void main() {
     expect(find.byKey(const Key('favorite-fav-1')), findsNothing);
     expect(find.text('Trajets détaillés'), findsOneWidget);
     expect(totalFieldText(tester), '24');
+  });
+
+  group('congés (UI calendrier)', () {
+    Future<void> seedPeriod(
+        WidgetTester tester, CivilDate start, CivilDate end) async {
+      await tester.runAsync(() => SembastVacationRepository(database.db).put(
+          VacationPeriod(
+              id: 'p-${start.toIso8601()}', startDate: start, endDate: end)));
+    }
+
+    testWidgets(
+        'ajout d’une période 3→10 via la feuille : cellules marquées '
+        '« Congé » (indice textuel, pas seulement couleur)', (tester) async {
+      await pumpOnCalendar(tester);
+
+      await tester.tap(find.byKey(const Key('cal-vacations-button')));
+      await tester.pumpAndSettle();
+
+      // Les taps du sélecteur sont restreints au dialogue (le calendrier
+      // derrière la feuille affiche les mêmes numéros de jours).
+      Finder inPicker(String text) => find.descendant(
+            of: find.byType(DatePickerDialog),
+            matching: find.text(text),
+          );
+
+      // Du 3…
+      await tester.tap(find.byKey(const Key('vacation-start')));
+      await tester.pumpAndSettle();
+      await tester.tap(inPicker('3'));
+      await tester.tap(inPicker('OK'));
+      await tester.pumpAndSettle();
+      // …au 10.
+      await tester.tap(find.byKey(const Key('vacation-end')));
+      await tester.pumpAndSettle();
+      await tester.tap(inPicker('10'));
+      await tester.tap(inPicker('OK'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('vacation-add')));
+      await tester.pumpAndSettle();
+      // La liste minimale montre la période créée.
+      expect(find.text('3 oct. 2026 → 10 oct. 2026'), findsOneWidget);
+
+      await tester.tap(find.text('Fermer'));
+      await tester.pumpAndSettle();
+
+      for (final day in ['03', '05', '10']) {
+        expect(
+          find.descendant(
+              of: cell('2026-10-$day'), matching: find.text('Congé')),
+          findsOneWidget,
+        );
+      }
+      expect(
+        find.descendant(
+            of: cell('2026-10-02'), matching: find.text('Congé')),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+        'retirer le congé du 6 depuis le détail : 3-5 et 7-10 restent',
+        (tester) async {
+      await seedPeriod(
+          tester, CivilDate(2026, 10, 3), CivilDate(2026, 10, 10));
+      await pumpOnCalendar(tester);
+
+      await tester.tap(cell('2026-10-06'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('vacation-card')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('remove-vacation-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+            of: cell('2026-10-06'), matching: find.text('Congé')),
+        findsNothing,
+      );
+      for (final day in ['05', '07']) {
+        expect(
+          find.descendant(
+              of: cell('2026-10-$day'), matching: find.text('Congé')),
+          findsOneWidget,
+        );
+      }
+    });
+
+    testWidgets('suppression d’une période complète via la feuille',
+        (tester) async {
+      await seedPeriod(
+          tester, CivilDate(2026, 10, 3), CivilDate(2026, 10, 10));
+      await pumpOnCalendar(tester);
+
+      await tester.tap(find.byKey(const Key('cal-vacations-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Supprimer cette période de congés ?'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Supprimer'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Fermer'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+            of: cell('2026-10-05'), matching: find.text('Congé')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('marquer une journée vide depuis le détail', (tester) async {
+      await pumpOnCalendar(tester);
+
+      await tester.tap(cell('2026-10-20'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('mark-vacation-button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('vacation-card')), findsOneWidget);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+            of: cell('2026-10-20'), matching: find.text('Congé')),
+        findsOneWidget,
+      );
+    });
   });
 
   testWidgets('navigation mois précédent/suivant + retour aujourd’hui',

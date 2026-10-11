@@ -8,6 +8,7 @@ import '../../widgets/km_format.dart';
 import '../../widgets/placeholder_card.dart';
 import 'calendar_controller.dart';
 import 'day_detail_screen.dart';
+import 'vacations_sheet.dart';
 
 class CalendarScreen extends ConsumerWidget {
   const CalendarScreen({super.key});
@@ -135,6 +136,21 @@ class _CalendarView extends ConsumerWidget {
               child: const Text('Revenir à aujourd’hui'),
             ),
           ),
+        Center(
+          child: TextButton.icon(
+            key: const Key('cal-vacations-button'),
+            onPressed: () => showVacationsSheet(context),
+            icon: const Icon(Icons.beach_access_outlined),
+            label: const Text('Ajouter des congés'),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.onSurfaceVariant,
+              minimumSize: const Size(
+                AppSizes.minTouchTarget * 3,
+                AppSizes.minTouchTarget,
+              ),
+            ),
+          ),
+        ),
         const SizedBox(height: AppSpacing.m),
 
         // En-têtes de jours (lundi -> dimanche).
@@ -172,6 +188,8 @@ class _CalendarView extends ConsumerWidget {
             totalKm:
                 calendar.dayTotals[CivilDate(calendar.year, calendar.month, day)],
             isToday: calendar.today == CivilDate(calendar.year, calendar.month, day),
+            isVacation: calendar.vacationDays
+                .contains(CivilDate(calendar.year, calendar.month, day)),
             onTap: _openDay,
           ),
         ),
@@ -196,12 +214,14 @@ class _DayCell extends StatelessWidget {
     required this.date,
     required this.totalKm,
     required this.isToday,
+    required this.isVacation,
     required this.onTap,
   });
 
   final CivilDate date;
   final double? totalKm;
   final bool isToday;
+  final bool isVacation;
   final void Function(BuildContext context, CivilDate date) onTap;
 
   @override
@@ -210,6 +230,8 @@ class _DayCell extends StatelessWidget {
     final hasKm = totalKm != null && totalKm! > 0;
 
     // Toute la cellule est tactile, hauteur confortable.
+    // Priorités : numéro, km s'il y en a, congé.
+    // Le congé n'est jamais indiqué par la seule couleur : libellé textuel.
     return InkWell(
       key: Key('cal-cell-${date.toIso8601()}'),
       onTap: () => onTap(context, date),
@@ -220,7 +242,9 @@ class _DayCell extends StatelessWidget {
         decoration: BoxDecoration(
           color: hasKm
               ? theme.colorScheme.primaryContainer.withValues(alpha: 0.55)
-              : null,
+              : isVacation
+                  ? theme.colorScheme.tertiaryContainer.withValues(alpha: 0.5)
+                  : null,
           border: isToday
               ? Border.all(color: theme.colorScheme.primary, width: 2)
               : null,
@@ -232,8 +256,9 @@ class _DayCell extends StatelessWidget {
             Text(
               '${date.day}',
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight:
-                    hasKm || isToday ? FontWeight.bold : FontWeight.normal,
+                fontWeight: hasKm || isToday || isVacation
+                    ? FontWeight.bold
+                    : FontWeight.normal,
               ),
             ),
             if (hasKm)
@@ -244,6 +269,17 @@ class _DayCell extends StatelessWidget {
                 style: theme.textTheme.labelSmall?.copyWith(
                   fontSize: 10,
                   color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            else if (isVacation)
+              Text(
+                'Congé',
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: 9,
+                  color: theme.colorScheme.tertiary,
                   fontWeight: FontWeight.bold,
                 ),
               ),

@@ -4,6 +4,7 @@ import '../../app/providers.dart';
 import '../../domain/logic/statistics.dart';
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/km.dart';
+import '../../domain/models/vacation_period.dart';
 
 /// État du calendrier : le mois affiché et ses totaux dérivés.
 class CalendarState {
@@ -13,6 +14,7 @@ class CalendarState {
     required this.dayTotals,
     required this.monthTotal,
     required this.today,
+    required this.vacationDays,
   });
 
   final int year;
@@ -25,6 +27,9 @@ class CalendarState {
   final double monthTotal;
 
   final CivilDate today;
+
+  /// Jours du mois affiché marqués congé (statut explicite uniquement).
+  final Set<CivilDate> vacationDays;
 
   bool get isCurrentMonth => year == today.year && month == today.month;
 
@@ -63,6 +68,7 @@ class CalendarController extends AsyncNotifier<CalendarState> {
         await ref.read(tripRepositoryProvider).getBetween(first, last);
     final extras =
         await ref.read(dayExtraRepositoryProvider).getBetween(first, last);
+    final vacations = await ref.read(vacationRepositoryProvider).getAll();
 
     final dayTotals = totalsByDay(trips: trips, extras: extras);
     return CalendarState(
@@ -71,7 +77,24 @@ class CalendarController extends AsyncNotifier<CalendarState> {
       dayTotals: dayTotals,
       monthTotal: sumKm(dayTotals.values),
       today: today,
+      vacationDays: _vacationDaysInMonth(vacations, first, last),
     );
+  }
+
+  static Set<CivilDate> _vacationDaysInMonth(
+    List<VacationPeriod> periods,
+    CivilDate first,
+    CivilDate last,
+  ) {
+    final days = <CivilDate>{};
+    for (var date = first;
+        !date.isAfter(last);
+        date = date.addDays(1)) {
+      if (periods.any((p) => p.contains(date))) {
+        days.add(date);
+      }
+    }
+    return days;
   }
 
   Future<void> _showMonth(int year, int month) async {

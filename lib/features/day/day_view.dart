@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/logic/vacations.dart';
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/trip.dart';
+import '../../domain/models/vacation_period.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import '../today/favorites_section.dart';
+import '../vacations/vacation_guard.dart';
+import '../vacations/vacations_controller.dart';
 import 'day_controller.dart';
 import 'editable_day_total.dart';
 import 'trip_form_sheet.dart';
@@ -32,13 +36,21 @@ class DayView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dayControllerProvider(date));
 
+    final vacations =
+        ref.watch(vacationsControllerProvider).value ??
+            const <VacationPeriod>[];
+
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => _ErrorView(
         message: '$error',
         onRetry: () => ref.invalidate(dayControllerProvider(date)),
       ),
-      data: (day) => _DayContent(day: day, header: header),
+      data: (day) => _DayContent(
+        day: day,
+        header: header,
+        isVacation: isVacationDate(vacations, date),
+      ),
     );
   }
 }
@@ -79,15 +91,23 @@ class _ErrorView extends StatelessWidget {
 }
 
 class _DayContent extends ConsumerWidget {
-  const _DayContent({required this.day, required this.header});
+  const _DayContent({
+    required this.day,
+    required this.header,
+    required this.isVacation,
+  });
 
   final DayState day;
   final List<Widget> header;
+  final bool isVacation;
 
   DayController _controller(WidgetRef ref) =>
       ref.read(dayControllerProvider(day.date).notifier);
 
   Future<void> _addTrip(BuildContext context, WidgetRef ref) async {
+    // Jamais congé + kilomètres : confirmation puis retrait du jour.
+    if (!await ensureDayNotVacation(context, ref, day.date)) return;
+    if (!context.mounted) return;
     final result = await showTripFormSheet(context);
     if (result == null) return;
     await _controller(ref).addTrip(
@@ -184,6 +204,34 @@ class _DayContent extends ConsumerWidget {
         : '${formatKm(trip.distanceKm)} — $route';
   }
 
+  /// « Marquer comme congé » : refusé tant que la journée contient des
+  /// kilomètres (aucune suppression automatique, jamais).
+  Future<void> _markVacation(BuildContext context, WidgetRef ref) async {
+    if (!day.isEmpty) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Journée non vide'),
+          content: Text(
+            'Cette journée contient déjà ${formatKm(day.totalKm)}.\n'
+            'Effacez d’abord les kilomètres pour la marquer comme congé.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    await ref.read(vacationsControllerProvider.notifier).markDay(day.date);
+  }
+
+  Future<void> _removeVacation(WidgetRef ref) =>
+      ref.read(vacationsControllerProvider.notifier).removeDay(day.date);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -193,8 +241,51 @@ class _DayContent extends ConsumerWidget {
       children: [
         ...header,
 
-        // Total du jour, toujours dérivé du domaine, directement éditable.
-        EditableDayTotal(date: day.date, totalKm: day.totalKm),
+        // Journée en congé : état clair A LA PLACE du compteur — pas de
+        // faux total « normal ». Retirer le congé fait revenir le compteur.
+        if (isVacation)
+          Card(
+            key: const Key('vacation-card'),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.xxl,
+                horizontal: AppSpacing.xl,
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.beach_access,
+                    size: 44,
+                    color: theme.colorScheme.tertiary,
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+                  Text(
+                    'Congé',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.tertiary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  TextButton.icon(
+                    key: const Key('remove-vacation-button'),
+                    onPressed: () => _removeVacation(ref),
+                    icon: const Icon(Icons.close),
+                    label: const Text('Retirer le congé'),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(
+                        AppSizes.minTouchTarget * 3,
+                        AppSizes.minTouchTarget,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          // Total du jour, toujours dérivé du domaine, directement éditable.
+          EditableDayTotal(date: day.date, totalKm: day.totalKm),
         const SizedBox(height: AppSpacing.l),
 
         // Favoris : ajout en un toucher, Trip daté de CETTE journée.
@@ -277,6 +368,27 @@ class _DayContent extends ConsumerWidget {
               subtitle: const Text(
                 'Kilomètres non détaillés — s’ajustent en modifiant '
                 'le total du jour.',
+              ),
+            ),
+          ),
+        ],
+
+        // Marquage congé : action explicite, refusée si la journée a des
+        // kilomètres. (JOUR VIDE ≠ CONGÉ : rien n'est jamais automatique.)
+        if (!isVacation) ...[
+          const SizedBox(height: AppSpacing.l),
+          Center(
+            child: TextButton.icon(
+              key: const Key('mark-vacation-button'),
+              onPressed: () => _markVacation(context, ref),
+              icon: const Icon(Icons.beach_access_outlined),
+              label: const Text('Marquer comme congé'),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.onSurfaceVariant,
+                minimumSize: const Size(
+                  AppSizes.minTouchTarget * 3,
+                  AppSizes.minTouchTarget,
+                ),
               ),
             ),
           ),

@@ -6,6 +6,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import '../../domain/models/civil_date.dart';
 import '../day/day_controller.dart';
+import '../vacations/vacation_guard.dart';
 import 'favorite_form_sheet.dart';
 import 'favorites_controller.dart';
 
@@ -28,6 +29,9 @@ class FavoritesSection extends ConsumerWidget {
     WidgetRef ref,
     FavoriteTrip favorite,
   ) async {
+    // Jamais congé + kilomètres : confirmation puis retrait du jour.
+    if (!await ensureDayNotVacation(context, ref, date)) return;
+    if (!context.mounted) return;
     await ref
         .read(dayControllerProvider(date).notifier)
         .addTripFromFavorite(favorite);

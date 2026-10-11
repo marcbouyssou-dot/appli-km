@@ -16,6 +16,8 @@ import 'package:mes_km/data/local/app_database.dart';
 import 'package:mes_km/data/local/sembast_day_extra_repository.dart';
 import 'package:mes_km/data/local/sembast_favorite_trip_repository.dart';
 import 'package:mes_km/data/local/sembast_trip_repository.dart';
+import 'package:mes_km/data/local/sembast_vacation_repository.dart';
+import 'package:mes_km/domain/models/vacation_period.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
 import 'package:mes_km/domain/models/favorite_trip.dart';
@@ -186,5 +188,60 @@ void main() {
     await tester.tap(find.byIcon(Icons.today_outlined));
     await tester.pumpAndSettle();
     expect(find.text('km aujourd’hui'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Web réel : congés — période visible, retrait d\u2019un jour, '
+      'persistance IndexedDB', (tester) async {
+    final database =
+        await MesKmDatabase.open(newDatabaseFactoryMemory(), name: 'wv.db');
+    addTearDown(database.close);
+
+    await tester.runAsync(() => SembastVacationRepository(database.db).put(
+        VacationPeriod(
+            id: 'p-1',
+            startDate: CivilDate(2026, 10, 3),
+            endDate: CivilDate(2026, 10, 10))));
+
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(database),
+        todayDateProvider.overrideWithValue(() => day),
+      ],
+      child: const MesKmApp(),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.calendar_month_outlined));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+          of: find.byKey(const Key('cal-cell-2026-10-05')),
+          matching: find.text('Congé')),
+      findsOneWidget,
+    );
+
+    // Retirer le congé du 6 depuis le détail.
+    await tester.tap(find.byKey(const Key('cal-cell-2026-10-06')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('remove-vacation-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+          of: find.byKey(const Key('cal-cell-2026-10-06')),
+          matching: find.text('Congé')),
+      findsNothing,
+    );
+
+    final stored = await tester
+        .runAsync(() => SembastVacationRepository(database.db).getAll());
+    expect(stored, hasLength(2)); // 3-5 et 7-10, découpe persistée
   });
 }
