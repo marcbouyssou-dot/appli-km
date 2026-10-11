@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
 import '../../data/backup/backup_codec.dart';
+import '../../data/backup/backup_file_gateway.dart';
 import '../calendar/calendar_controller.dart';
 import '../day/day_controller.dart';
 import '../today/favorites_controller.dart';
@@ -17,8 +18,9 @@ class BackupController extends AsyncNotifier<DateTime?> {
       ref.read(backupMetaRepositoryProvider).lastExportAt();
 
   /// Crée une sauvegarde complète (snapshot cohérent) et la propose à
-  /// l'utilisateur (partage/téléchargement).
-  Future<void> createBackup() async {
+  /// l'utilisateur (partage si supporté, sinon téléchargement).
+  /// Une annulation volontaire n'enregistre pas de « dernier export ».
+  Future<BackupSaveOutcome> createBackup() async {
     final snapshot = await ref.read(backupServiceProvider).snapshot();
     final now = DateTime.now();
 
@@ -34,14 +36,16 @@ class BackupController extends AsyncNotifier<DateTime?> {
     final fileName =
         'MesKm-Sauvegarde-${DateFormat('yyyy-MM-dd').format(now)}.kmbackup';
 
-    await ref
+    final outcome = await ref
         .read(backupFileGatewayProvider)
         .saveBackupFile(fileName: fileName, content: json);
+    if (outcome == BackupSaveOutcome.cancelled) return outcome;
 
     await ref.read(backupMetaRepositoryProvider).setLastExportAt(now);
     state = await AsyncValue.guard(
       () => ref.read(backupMetaRepositoryProvider).lastExportAt(),
     );
+    return outcome;
   }
 
   /// Choisit un fichier puis l'analyse SANS AUCUNE ÉCRITURE.

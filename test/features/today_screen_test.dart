@@ -468,6 +468,31 @@ void main() {
       await flushSnackBar(tester);
     });
 
+    testWidgets(
+        'RÉGRESSION KM-008A : avec des favoris existants, « Nouveau favori » '
+        'reste disponible en contexte et crée via le même formulaire',
+        (tester) async {
+      await seedFavorite(tester);
+      await pumpApp(tester);
+
+      await tester.tap(find.byKey(const Key('create-favorite-row')));
+      await tester.pumpAndSettle();
+      expect(find.text('Nouveau trajet favori'), findsOneWidget);
+
+      await tester.enterText(
+          find.widgetWithText(TextField, 'Nom du favori'), 'Dépôt');
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
+        '7,5',
+      );
+      await tester.tap(find.text('Créer le favori'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dépôt'), findsOneWidget);
+      expect(find.text('+7,5 km'), findsOneWidget);
+      expect(find.text('Cabinet ↔ EHPAD'), findsOneWidget);
+    });
+
     testWidgets('création d’un favori depuis l’invitation',
         (tester) async {
       await pumpApp(tester);
@@ -522,6 +547,30 @@ void main() {
       await tester.pumpAndSettle();
       expectTotal(tester, '50');
       await flushSnackBar(tester);
+    });
+
+    testWidgets(
+        'Plus > Trajets favoris existe et la création y fonctionne',
+        (tester) async {
+      await pumpApp(tester);
+      await openManagement(tester);
+
+      expect(find.text('Aucun favori pour le moment.'), findsOneWidget);
+      await tester.tap(find.text('Nouveau favori'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.widgetWithText(TextField, 'Nom du favori'), 'Depuis Plus');
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
+        '12',
+      );
+      await tester.tap(find.text('Créer le favori'));
+      await tester.pumpAndSettle();
+      expect(find.text('Depuis Plus'), findsOneWidget);
+
+      await backToToday(tester);
+      expect(find.text('Depuis Plus'), findsOneWidget);
+      expect(find.text('+12 km'), findsOneWidget);
     });
 
     testWidgets('suppression confirmée via la gestion globale (Plus)', (tester) async {

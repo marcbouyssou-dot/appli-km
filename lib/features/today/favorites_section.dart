@@ -128,6 +128,22 @@ class FavoritesSection extends ConsumerWidget {
                     ),
                   ),
                 ),
+              // Créer reste possible EN CONTEXTE même quand des favoris
+              // existent (régression KM-008A : le retrait de « Gérer »
+              // avait supprimé toute entrée de création ici). Même
+              // formulaire global que partout ailleurs.
+              ListTile(
+                key: const Key('create-favorite-row'),
+                onTap: () => _createFavorite(context, ref),
+                minTileHeight: AppSizes.minTouchTarget,
+                leading: Icon(Icons.add, color: theme.colorScheme.primary),
+                title: Text(
+                  'Nouveau favori',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
 import 'package:web/web.dart' as web;
 
 import 'backup_file_gateway.dart';
+import 'share_policy.dart';
 
 /// Passerelle fichier Web/PWA.
 ///
@@ -15,7 +17,7 @@ class WebBackupFileGateway implements BackupFileGateway {
   const WebBackupFileGateway();
 
   @override
-  Future<void> saveBackupFile({
+  Future<BackupSaveOutcome> saveBackupFile({
     required String fileName,
     required String content,
   }) async {
@@ -27,15 +29,37 @@ class WebBackupFileGateway implements BackupFileGateway {
 
     final navigator = web.window.navigator;
     final shareData = web.ShareData(files: [file].toJS);
-    if (navigator.canShare(shareData)) {
+
+    // DÉTECTION DE CAPACITÉS AVANT APPEL : sur Safari/PWA iPhone,
+    // navigator.canShare peut être absent — l'appeler directement lève
+    // « canShare is not a function » et le repli n'est jamais atteint
+    // (bug recette KM-008). has() interroge l'objet JS réel.
+    final path = chooseBackupSavePath(
+      hasShare: navigator.has('share'),
+      hasCanShare: navigator.has('canShare'),
+      canShareFiles: () => navigator.canShare(shareData),
+    );
+
+    if (path == BackupSavePath.share) {
       try {
         await navigator.share(shareData).toDart;
-        return;
-      } catch (_) {
-        // Partage annulé ou refusé : on retombe sur le téléchargement.
+        return BackupSaveOutcome.completed;
+      } catch (error) {
+        if (_isUserAbort(error)) {
+          // Annulation volontaire : pas une erreur, pas de repli forcé.
+          return BackupSaveOutcome.cancelled;
+        }
+        // Vraie erreur de partage : repli sûr sur le téléchargement.
       }
     }
 
+    _downloadFile(file, fileName);
+    return BackupSaveOutcome.completed;
+  }
+
+  static bool _isUserAbort(Object error) => '$error'.contains('AbortError');
+
+  static void _downloadFile(web.File file, String fileName) {
     final url = web.URL.createObjectURL(file);
     final anchor = web.HTMLAnchorElement()
       ..href = url

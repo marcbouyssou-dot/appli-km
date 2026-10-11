@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/backup/backup_codec.dart';
+import '../../data/backup/backup_file_gateway.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import 'backup_controller.dart';
@@ -15,14 +17,27 @@ class BackupScreen extends ConsumerWidget {
   Future<void> _createBackup(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(backupControllerProvider.notifier).createBackup();
+      final outcome =
+          await ref.read(backupControllerProvider.notifier).createBackup();
+      // Annulation volontaire de la feuille de partage : ni succès, ni échec.
+      if (outcome == BackupSaveOutcome.cancelled) return;
       messenger.showSnackBar(
         const SnackBar(content: Text('Sauvegarde créée.')),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      // Jamais d'erreur technique (NoSuchMethodError, TypeError…) à l'écran.
+      _logError('createBackup', error, stackTrace);
       messenger.showSnackBar(
-        SnackBar(content: Text('Échec de la sauvegarde : $error')),
+        const SnackBar(
+          content: Text('Impossible de créer la sauvegarde. Réessayez.'),
+        ),
       );
+    }
+  }
+
+  static void _logError(String step, Object error, StackTrace stackTrace) {
+    if (kDebugMode) {
+      debugPrint('[backup] $step: $error\n$stackTrace');
     }
   }
 
@@ -43,10 +58,10 @@ class BackupScreen extends ConsumerWidget {
       if (!context.mounted) return;
       await _showErrorDialog(context, '$error');
       return;
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _logError('pickAndAnalyze', error, stackTrace);
       if (!context.mounted) return;
-      await _showErrorDialog(
-          context, 'Impossible de lire ce fichier : $error');
+      await _showErrorDialog(context, 'Impossible de lire ce fichier.');
       return;
     }
 
@@ -59,9 +74,13 @@ class BackupScreen extends ConsumerWidget {
       messenger.showSnackBar(
         const SnackBar(content: Text('Données restaurées.')),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _logError('restore', error, stackTrace);
       messenger.showSnackBar(
-        SnackBar(content: Text('Échec de la restauration : $error')),
+        const SnackBar(
+          content:
+              Text('Impossible de restaurer la sauvegarde. Réessayez.'),
+        ),
       );
     }
   }

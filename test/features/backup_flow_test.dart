@@ -23,14 +23,19 @@ class FakeBackupFileGateway implements BackupFileGateway {
   String? savedContent;
   String? fileToPick;
   bool cancelPick = false;
+  bool cancelShare = false;
+  Object? saveError;
 
   @override
-  Future<void> saveBackupFile({
+  Future<BackupSaveOutcome> saveBackupFile({
     required String fileName,
     required String content,
   }) async {
+    if (saveError != null) throw saveError!;
+    if (cancelShare) return BackupSaveOutcome.cancelled;
     savedName = fileName;
     savedContent = content;
+    return BackupSaveOutcome.completed;
   }
 
   @override
@@ -187,6 +192,42 @@ void main() {
           matching: find.text('42 km')),
       findsOneWidget,
     );
+  });
+
+  testWidgets(
+      'annulation du partage : ni « Sauvegarde créée », ni message d’échec, '
+      'pas de date d’export enregistrée', (tester) async {
+    await pumpApp(tester);
+    await openBackupScreen(tester);
+
+    gateway.cancelShare = true;
+    await tester.tap(find.byKey(const Key('create-backup-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sauvegarde créée.'), findsNothing);
+    expect(find.textContaining('Impossible'), findsNothing);
+    expect(find.textContaining('Dernière sauvegarde exportée'), findsNothing);
+  });
+
+  testWidgets(
+      'vraie erreur d’export : message compréhensible, jamais de '
+      'NoSuchMethodError à l’écran', (tester) async {
+    await pumpApp(tester);
+    await openBackupScreen(tester);
+
+    gateway.saveError =
+        NoSuchMethodError.withInvocation(null, Invocation.method(#canShare, []));
+    await tester.tap(find.byKey(const Key('create-backup-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Impossible de créer la sauvegarde. Réessayez.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('NoSuchMethodError'), findsNothing);
+    expect(find.textContaining('canShare'), findsNothing);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('fichier invalide : refus clair, données intactes',

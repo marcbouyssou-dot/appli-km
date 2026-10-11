@@ -8,7 +8,7 @@ class UnsupportedBackupFileGateway implements BackupFileGateway {
       'Sauvegarde fichier non disponible sur cette plateforme.');
 
   @override
-  Future<void> saveBackupFile({
+  Future<BackupSaveOutcome> saveBackupFile({
     required String fileName,
     required String content,
   }) async =>

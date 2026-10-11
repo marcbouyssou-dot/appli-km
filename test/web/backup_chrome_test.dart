@@ -5,8 +5,12 @@ library;
 // Le partage/sélecteur de fichier natif ne peut pas être automatisé en
 // headless : il reste couvert par la recette humaine iPhone.
 
+import 'dart:js_interop_unsafe';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mes_km/data/backup/backup_codec.dart';
+import 'package:mes_km/data/backup/backup_file_gateway.dart';
+import 'package:mes_km/data/backup/backup_file_gateway_web.dart';
 import 'package:mes_km/data/backup/backup_service.dart';
 import 'package:mes_km/data/local/sembast_favorite_trip_repository.dart';
 import 'package:mes_km/data/local/sembast_trip_repository.dart';
@@ -14,8 +18,30 @@ import 'package:mes_km/data/local/web_database.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/favorite_trip.dart';
 import 'package:mes_km/domain/models/trip.dart';
+import 'package:web/web.dart' as web;
 
 void main() {
+  test(
+      'passerelle réelle : saveBackupFile n’échoue JAMAIS, même sans '
+      'Web Share API (cas iPhone « canShare undefined »)', () async {
+    // Sur Chrome desktop (comme sur certains contextes Safari/PWA),
+    // navigator.share / canShare peuvent être absents : l’ancienne
+    // implémentation levait « canShare is not a function » ici même.
+    final navigator = web.window.navigator;
+    final hasShare = navigator.has('share');
+    final hasCanShare = navigator.has('canShare');
+    // Trace du contexte réel pour le rapport (les deux chemins sont sûrs).
+    // ignore: avoid_print
+    print('[chrome] navigator.share=$hasShare canShare=$hasCanShare');
+
+    const gateway = WebBackupFileGateway();
+    final outcome = await gateway.saveBackupFile(
+      fileName: 'MesKm-Sauvegarde-2026-10-11.kmbackup',
+      content: '{"schemaVersion": 1}',
+    );
+    expect(outcome, BackupSaveOutcome.completed);
+  });
+
   test('IndexedDB réel : export -> mutation -> restauration atomique',
       () async {
     final database = await openMesKmDatabaseWeb(name: 'backup_test.db');
