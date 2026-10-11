@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/providers.dart';
 import '../../domain/logic/vacations.dart';
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/trip.dart';
@@ -133,6 +134,7 @@ class _DayContent extends ConsumerWidget {
     final result = await showTripFormSheet(
       context,
       vehicles: _vehicleOptions(vehicles, null),
+      routeService: ref.read(routeDistanceServiceProvider),
       // Pré-sélection : véhicule principal ACTUEL (figé dans le Trip).
       defaultVehicleId: vehicles?.mainVehicleId,
     );
@@ -157,6 +159,7 @@ class _DayContent extends ConsumerWidget {
       context,
       initial: trip,
       vehicles: _vehicleOptions(vehicles, trip),
+      routeService: ref.read(routeDistanceServiceProvider),
     );
     if (result == null) return;
     await _controller(ref).updateTrip(

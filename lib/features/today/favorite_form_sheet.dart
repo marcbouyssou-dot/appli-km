@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../data/network/route_distance_service.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../domain/models/vehicle.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
+import '../day/route_calc_section.dart';
 
 /// Valeurs saisies dans le formulaire de favori.
 class FavoriteFormResult {
@@ -39,6 +41,7 @@ Future<FavoriteFormResult?> showFavoriteFormSheet(
   BuildContext context, {
   FavoriteTrip? initial,
   List<Vehicle> vehicles = const [],
+  RouteDistanceService? routeService,
   Future<bool> Function()? onDeleteRequested,
 }) {
   return showModalBottomSheet<FavoriteFormResult>(
@@ -48,6 +51,7 @@ Future<FavoriteFormResult?> showFavoriteFormSheet(
     builder: (context) => _FavoriteFormSheet(
       initial: initial,
       vehicles: vehicles,
+      routeService: routeService,
       onDeleteRequested: onDeleteRequested,
     ),
   );
@@ -57,11 +61,13 @@ class _FavoriteFormSheet extends StatefulWidget {
   const _FavoriteFormSheet({
     this.initial,
     this.vehicles = const [],
+    this.routeService,
     this.onDeleteRequested,
   });
 
   final FavoriteTrip? initial;
   final List<Vehicle> vehicles;
+  final RouteDistanceService? routeService;
   final Future<bool> Function()? onDeleteRequested;
 
   @override
@@ -215,6 +221,18 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
                 labelText: 'Destination (facultatif)',
                 border: OutlineInputBorder(),
               ),
+            ),
+            // Le calcul réseau sert uniquement à CONFIGURER le favori :
+            // chaque futur tap réutilisera la distance SANS réseau.
+            RouteCalcSection(
+              service: widget.routeService,
+              originController: _originController,
+              destinationController: _destinationController,
+              isRoundTrip: () => _defaultRoundTrip,
+              onUseDistance: (totalKm) => setState(() {
+                _distanceController.text = formatKmValue(totalKm);
+                _distanceError = null;
+              }),
             ),
             const SizedBox(height: AppSpacing.m),
             TextField(

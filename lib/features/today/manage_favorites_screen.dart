@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/providers.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../domain/models/vehicle.dart';
 import '../../theme/tokens.dart';
@@ -36,8 +37,11 @@ class _ManageFavoritesScreenState
       ref.read(vehiclesControllerProvider).value?.active ?? const [];
 
   Future<void> _create() async {
-    final result =
-        await showFavoriteFormSheet(context, vehicles: _activeVehicles());
+    final result = await showFavoriteFormSheet(
+      context,
+      vehicles: _activeVehicles(),
+      routeService: ref.read(routeDistanceServiceProvider),
+    );
     if (result == null) return;
     await ref.read(favoritesControllerProvider.notifier).create(
           label: result.label,
@@ -55,6 +59,7 @@ class _ManageFavoritesScreenState
       context,
       initial: favorite,
       vehicles: _activeVehicles(),
+      routeService: ref.read(routeDistanceServiceProvider),
       onDeleteRequested: () => _delete(favorite),
     );
     if (result == null) return;

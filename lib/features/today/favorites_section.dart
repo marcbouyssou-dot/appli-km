@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/providers.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
@@ -66,7 +67,11 @@ class FavoritesSection extends ConsumerWidget {
   Future<void> _createFavorite(BuildContext context, WidgetRef ref) async {
     final vehicles =
         ref.read(vehiclesControllerProvider).value?.active ?? const [];
-    final result = await showFavoriteFormSheet(context, vehicles: vehicles);
+    final result = await showFavoriteFormSheet(
+      context,
+      vehicles: vehicles,
+      routeService: ref.read(routeDistanceServiceProvider),
+    );
     if (result == null) return;
     await ref.read(favoritesControllerProvider.notifier).create(
           label: result.label,

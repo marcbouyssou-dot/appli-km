@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../data/network/route_distance_service.dart';
 import '../../domain/models/trip.dart';
 import '../../domain/models/vehicle.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
+import 'route_calc_section.dart';
 
 /// Valeurs saisies dans le formulaire de trajet.
 class TripFormResult {
@@ -37,6 +39,7 @@ Future<TripFormResult?> showTripFormSheet(
   Trip? initial,
   List<Vehicle> vehicles = const [],
   String? defaultVehicleId,
+  RouteDistanceService? routeService,
 }) {
   return showModalBottomSheet<TripFormResult>(
     context: context,
@@ -46,6 +49,7 @@ Future<TripFormResult?> showTripFormSheet(
       initial: initial,
       vehicles: vehicles,
       defaultVehicleId: defaultVehicleId,
+      routeService: routeService,
     ),
   );
 }
@@ -55,11 +59,13 @@ class _TripFormSheet extends StatefulWidget {
     this.initial,
     this.vehicles = const [],
     this.defaultVehicleId,
+    this.routeService,
   });
 
   final Trip? initial;
   final List<Vehicle> vehicles;
   final String? defaultVehicleId;
+  final RouteDistanceService? routeService;
 
   @override
   State<_TripFormSheet> createState() => _TripFormSheetState();
@@ -182,6 +188,17 @@ class _TripFormSheetState extends State<_TripFormSheet> {
                 labelText: 'Destination (facultatif)',
                 border: OutlineInputBorder(),
               ),
+            ),
+            // Calcul optionnel : visible seulement si départ + destination.
+            RouteCalcSection(
+              service: widget.routeService,
+              originController: _originController,
+              destinationController: _destinationController,
+              isRoundTrip: () => _isRoundTrip,
+              onUseDistance: (totalKm) => setState(() {
+                _distanceController.text = formatKmValue(totalKm);
+                _distanceError = null;
+              }),
             ),
             const SizedBox(height: AppSpacing.m),
             TextField(

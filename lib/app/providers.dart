@@ -5,6 +5,8 @@ import '../data/backup/backup_service.dart';
 import '../data/backup/platform_backup_file_gateway.dart';
 import '../data/ids.dart';
 import '../data/local/app_database.dart';
+import '../data/network/osm_route_service.dart';
+import '../data/network/route_distance_service.dart';
 import '../data/local/sembast_day_clear_repository.dart';
 import '../data/local/sembast_day_extra_repository.dart';
 import '../data/local/sembast_favorite_trip_repository.dart';
@@ -71,6 +73,12 @@ final backupMetaRepositoryProvider = Provider<BackupMetaRepository>(
 
 final backupFileGatewayProvider = Provider<BackupFileGateway>(
   (ref) => createBackupFileGateway(),
+);
+
+/// Calcul d'itinéraire : CONFORT optionnel, invoqué uniquement sur action
+/// explicite de l'utilisateur — jamais en arrière-plan.
+final routeDistanceServiceProvider = Provider<RouteDistanceService>(
+  (ref) => OsmRouteService(),
 );
 
 /// Date civile « aujourd'hui », surchargeable en test.
