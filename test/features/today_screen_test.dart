@@ -211,7 +211,7 @@ void main() {
 
     await tester.tap(find.text('Statistiques'));
     await tester.pumpAndSettle();
-    expect(find.text('Vos statistiques kilométriques'), findsOneWidget);
+    expect(find.text('TOTAL ANNÉE'), findsOneWidget);
 
     await tester.tap(find.text('Plus'));
     await tester.pumpAndSettle();

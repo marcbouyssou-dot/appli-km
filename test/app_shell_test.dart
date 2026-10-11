@@ -63,7 +63,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.bar_chart_outlined));
     await tester.pumpAndSettle();
-    expect(find.text('Vos statistiques kilométriques'), findsOneWidget);
+    expect(find.text('TOTAL ANNÉE'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.more_horiz_outlined));
     await tester.pumpAndSettle();
@@ -99,7 +99,7 @@ void main() {
 
     await tester.tap(navLabel('Statistiques'));
     await tester.pumpAndSettle();
-    expect(find.text('Vos statistiques kilométriques'), findsOneWidget);
+    expect(find.text('TOTAL ANNÉE'), findsOneWidget);
 
     await tester.tap(navLabel('Plus'));
     await tester.pumpAndSettle();

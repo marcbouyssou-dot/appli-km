@@ -556,6 +556,6 @@ void main() {
     // Navigation basse toujours fiable après édition + clavier.
     await tester.tap(find.byIcon(Icons.bar_chart_outlined));
     await tester.pumpAndSettle();
-    expect(find.text('Vos statistiques kilométriques'), findsOneWidget);
+    expect(find.text('TOTAL ANNÉE'), findsOneWidget);
   });
 }

@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../domain/models/km.dart';
 
 /// Valeur kilométrique seule, format français :
@@ -18,3 +20,11 @@ String formatKm(double km) => '${formatKmValue(km)} km';
 /// Retourne null si la saisie n'est pas un nombre.
 double? parseKmInput(String input) =>
     double.tryParse(input.trim().replaceAll(',', '.'));
+
+/// Format d'AFFICHAGE français avec séparateur de milliers (« 12 842 km »).
+/// Réservé aux écrans de lecture (statistiques…) — jamais pour un champ
+/// éditable, dont le texte doit rester compatible avec [parseKmInput].
+String formatKmGrouped(double km) {
+  final value = normalizeKm(km);
+  return '${NumberFormat('#,##0.#', 'fr_FR').format(value)} km';
+}

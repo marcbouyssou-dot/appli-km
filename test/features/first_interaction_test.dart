@@ -79,7 +79,7 @@ void main() {
     await tester.tap(navLabel('Statistiques'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Vos statistiques kilométriques'), findsOneWidget);
+    expect(find.text('TOTAL ANNÉE'), findsOneWidget);
   });
 
   testWidgets('première interaction = tap Plus => s’ouvre',
