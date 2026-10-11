@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/network/route_distance_service.dart';
 import '../../domain/models/trip.dart';
 import '../../domain/models/vehicle.dart';
+import '../../widgets/app_buttons.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import 'route_calc_section.dart';
@@ -241,13 +242,9 @@ class _TripFormSheetState extends State<_TripFormSheet> {
               ),
             ],
             const SizedBox(height: AppSpacing.l),
-            FilledButton(
+            PrimaryButton(
+              label: isEditing ? 'Enregistrer' : 'Ajouter',
               onPressed: _submit,
-              style: FilledButton.styleFrom(
-                minimumSize:
-                    const Size.fromHeight(AppSizes.minTouchTarget + 4),
-              ),
-              child: Text(isEditing ? 'Enregistrer' : 'Ajouter'),
             ),
             const SizedBox(height: AppSpacing.s),
             TextButton(

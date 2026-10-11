@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/models/app_settings.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/section_header.dart';
 
 /// Réglages minimaux : les informations utilisées par les documents.
 /// Champs AppSettings EXISTANTS (aucune extension de modèle, donc aucune
@@ -73,9 +74,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             : ListView(
                 padding: const EdgeInsets.all(AppSpacing.l),
                 children: [
-                  Text('INFORMATIONS POUR LES DOCUMENTS',
-                      style: theme.textTheme.labelLarge),
-                  const SizedBox(height: AppSpacing.s),
+                  const SectionHeader('INFORMATIONS POUR LES DOCUMENTS',
+                      topSpacing: 0),
                   Text(
                     'Affichées en tête du relevé annuel. Enregistrées '
                     'uniquement sur cet appareil.',

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/network/route_distance_service.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../domain/models/vehicle.dart';
+import '../../widgets/app_buttons.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import '../day/route_calc_section.dart';
@@ -274,13 +275,9 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
               ),
             ],
             const SizedBox(height: AppSpacing.l),
-            FilledButton(
+            PrimaryButton(
+              label: isEditing ? 'Enregistrer' : 'Créer le favori',
               onPressed: _submit,
-              style: FilledButton.styleFrom(
-                minimumSize:
-                    const Size.fromHeight(AppSizes.minTouchTarget + 4),
-              ),
-              child: Text(isEditing ? 'Enregistrer' : 'Créer le favori'),
             ),
             const SizedBox(height: AppSpacing.s),
             TextButton(
@@ -291,21 +288,16 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
               child: const Text('Annuler'),
             ),
             if (isEditing && widget.onDeleteRequested != null)
-              TextButton.icon(
+              DestructiveTextButton(
                 key: const Key('delete-favorite-from-form'),
+                icon: Icons.delete_outline,
+                label: 'Supprimer le favori',
                 onPressed: () async {
                   final deleted = await widget.onDeleteRequested!();
                   if (deleted && context.mounted) {
                     Navigator.of(context).pop();
                   }
                 },
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Supprimer le favori'),
-                style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                  minimumSize:
-                      const Size.fromHeight(AppSizes.minTouchTarget),
-                ),
               ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/vehicle.dart';
+import '../../widgets/app_buttons.dart';
 import '../../theme/tokens.dart';
 
 /// Valeurs saisies dans le formulaire de véhicule.
@@ -232,13 +233,9 @@ class _VehicleFormSheetState extends State<_VehicleFormSheet> {
               ),
             ),
             const SizedBox(height: AppSpacing.l),
-            FilledButton(
+            PrimaryButton(
+              label: isEditing ? 'Enregistrer' : 'Ajouter le véhicule',
               onPressed: _submit,
-              style: FilledButton.styleFrom(
-                minimumSize:
-                    const Size.fromHeight(AppSizes.minTouchTarget + 4),
-              ),
-              child: Text(isEditing ? 'Enregistrer' : 'Ajouter le véhicule'),
             ),
             const SizedBox(height: AppSpacing.s),
             TextButton(

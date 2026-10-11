@@ -6,7 +6,11 @@ import 'package:intl/intl.dart';
 import '../../data/backup/backup_codec.dart';
 import '../../data/backup/backup_file_gateway.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/app_buttons.dart';
+import '../../widgets/key_value_row.dart';
+import '../../widgets/section_header.dart';
 import '../../widgets/km_format.dart';
+import '../../widgets/status_banner.dart';
 import 'backup_controller.dart';
 
 /// Écran « Sauvegarde » : export et restauration locales, sans compte,
@@ -112,16 +116,8 @@ class BackupScreen extends ConsumerWidget {
             ? '${range.$1}'
             : '${range.$1} → ${range.$2}';
 
-    Widget line(String label, String value) => Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-          child: Row(
-            children: [
-              Expanded(child: Text(label)),
-              const SizedBox(width: AppSpacing.s),
-              Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
-        );
+    Widget line(String label, String value) =>
+        KeyValueRow(label: label, value: value);
 
     return showDialog<bool>(
       context: context,
@@ -140,12 +136,10 @@ class BackupScreen extends ConsumerWidget {
             line('Véhicules', '${content.vehicles.length}'),
             line('Périodes de congés', '${content.vacationPeriods.length}'),
             const SizedBox(height: AppSpacing.m),
-            Text(
-              'Cette restauration remplacera les données actuellement '
-              'présentes sur cet appareil.',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-              ),
+            const StatusBanner(
+              kind: StatusBannerKind.error,
+              text: 'Cette restauration remplacera les données actuellement '
+                  'présentes sur cet appareil.',
             ),
           ],
         ),
@@ -178,22 +172,17 @@ class BackupScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.l),
           children: [
-            Text('MES DONNÉES', style: theme.textTheme.labelLarge),
-            const SizedBox(height: AppSpacing.s),
+            const SectionHeader('MES DONNÉES', topSpacing: 0),
             Text(
               'Vos données sont enregistrées localement sur cet appareil.',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: AppSpacing.xl),
-            FilledButton.icon(
+            PrimaryButton(
               key: const Key('create-backup-button'),
+              icon: Icons.save_alt,
+              label: 'Créer une sauvegarde',
               onPressed: () => _createBackup(context, ref),
-              icon: const Icon(Icons.save_alt),
-              label: const Text('Créer une sauvegarde'),
-              style: FilledButton.styleFrom(
-                minimumSize:
-                    const Size.fromHeight(AppSizes.minTouchTarget + 8),
-              ),
             ),
             const SizedBox(height: AppSpacing.s),
             Text(
@@ -214,15 +203,12 @@ class BackupScreen extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: AppSpacing.xl),
-            FilledButton.tonalIcon(
+            PrimaryButton(
               key: const Key('restore-backup-button'),
+              tonal: true,
+              icon: Icons.restore,
+              label: 'Restaurer une sauvegarde',
               onPressed: () => _restoreFlow(context, ref),
-              icon: const Icon(Icons.restore),
-              label: const Text('Restaurer une sauvegarde'),
-              style: FilledButton.styleFrom(
-                minimumSize:
-                    const Size.fromHeight(AppSizes.minTouchTarget + 8),
-              ),
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(

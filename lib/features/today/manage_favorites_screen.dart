@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../domain/models/vehicle.dart';
+import '../../widgets/empty_state.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import '../vehicles/vehicles_controller.dart';
@@ -151,16 +152,8 @@ class _ManageFavoritesScreenState
               ),
             ),
             if (favorites.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Text(
-                  'Aucun favori pour le moment.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
+              const EmptyState('Aucun favori pour le moment.',
+                  icon: Icons.star_outline),
             for (var index = 0; index < favorites.length; index++)
               Card(
                 margin: const EdgeInsets.only(bottom: AppSpacing.m),

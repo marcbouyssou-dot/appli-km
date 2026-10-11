@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/backup/backup_file_gateway.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
+import '../../widgets/app_buttons.dart';
+import '../../widgets/period_selector.dart';
+import '../../widgets/section_header.dart';
 import 'documents_controller.dart';
 
 /// Plus → Documents : relevé annuel PDF et détail CSV, générés localement.
@@ -56,33 +59,15 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
             : ListView(
                 padding: const EdgeInsets.all(AppSpacing.l),
                 children: [
-                  Text('ANNÉE', style: theme.textTheme.labelLarge),
-                  Row(
-                    children: [
-                      IconButton(
-                        key: const Key('docs-prev-year'),
-                        onPressed: controller.previousYear,
-                        icon: const Icon(Icons.chevron_left),
-                        iconSize: 30,
-                        tooltip: 'Année précédente',
-                      ),
-                      Expanded(
-                        child: Text(
-                          '${state.year}',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        key: const Key('docs-next-year'),
-                        onPressed: controller.nextYear,
-                        icon: const Icon(Icons.chevron_right),
-                        iconSize: 30,
-                        tooltip: 'Année suivante',
-                      ),
-                    ],
+                  const SectionHeader('ANNÉE', topSpacing: 0),
+                  PeriodSelector(
+                    label: '${state.year}',
+                    onPrevious: controller.previousYear,
+                    onNext: controller.nextYear,
+                    previousKey: const Key('docs-prev-year'),
+                    nextKey: const Key('docs-next-year'),
+                    previousTooltip: 'Année précédente',
+                    nextTooltip: 'Année suivante',
                   ),
                   if (!state.isCurrentYear)
                     Center(
@@ -103,8 +88,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
-                  Text('RELEVÉ ANNUEL', style: theme.textTheme.labelLarge),
-                  const SizedBox(height: AppSpacing.s),
+                  const SectionHeader('RELEVÉ ANNUEL', topSpacing: 0),
                   Text(
                     'Synthèse PDF : totaux, véhicules, répartition '
                     'mensuelle, congés.',
@@ -113,23 +97,17 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s),
-                  FilledButton.icon(
+                  PrimaryButton(
                     key: const Key('create-pdf-button'),
+                    icon: Icons.picture_as_pdf_outlined,
+                    label: 'Créer le PDF',
                     onPressed: hasData && !_generating
                         ? () => _generate(controller.createPdf)
                         : null,
-                    icon: const Icon(Icons.picture_as_pdf_outlined),
-                    label: const Text('Créer le PDF'),
-                    style: FilledButton.styleFrom(
-                      minimumSize:
-                          const Size.fromHeight(AppSizes.minTouchTarget + 8),
-                    ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
-                  Text('DONNÉES DÉTAILLÉES',
-                      style: theme.textTheme.labelLarge),
-                  const SizedBox(height: AppSpacing.s),
+                  const SectionHeader('DONNÉES DÉTAILLÉES', topSpacing: 0),
                   Text(
                     'CSV complet de l’année : une ligne par trajet et '
                     'par journée de kilomètres non détaillés '
@@ -139,17 +117,14 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s),
-                  FilledButton.tonalIcon(
+                  PrimaryButton(
                     key: const Key('create-csv-button'),
+                    tonal: true,
+                    icon: Icons.table_chart_outlined,
+                    label: 'Créer le CSV',
                     onPressed: hasData && !_generating
                         ? () => _generate(controller.createCsv)
                         : null,
-                    icon: const Icon(Icons.table_chart_outlined),
-                    label: const Text('Créer le CSV'),
-                    style: FilledButton.styleFrom(
-                      minimumSize:
-                          const Size.fromHeight(AppSizes.minTouchTarget + 8),
-                    ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
 

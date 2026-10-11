@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/vehicle.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/section_header.dart';
 import '../../theme/tokens.dart';
 import 'vehicle_form_sheet.dart';
 import 'vehicles_controller.dart';
@@ -128,16 +130,8 @@ class _VehiclesScreenState extends ConsumerState<VehiclesScreen> {
           padding: const EdgeInsets.all(AppSpacing.l),
           children: [
             if (active.isEmpty && archived.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Text(
-                  'Aucun véhicule pour le moment.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
+              const EmptyState('Aucun véhicule pour le moment.',
+                  icon: Icons.directions_car_outlined),
             for (final vehicle in active)
               Card(
                 margin: const EdgeInsets.only(bottom: AppSpacing.m),
@@ -248,8 +242,7 @@ class _VehiclesScreenState extends ConsumerState<VehiclesScreen> {
             ),
             if (archived.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.xl),
-              Text('Véhicules archivés', style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.s),
+              const SectionHeader('Véhicules archivés', topSpacing: 0),
               for (final vehicle in archived)
                 ListTile(
                   key: Key('archived-${vehicle.id}'),

@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/vacation_period.dart';
+import '../../widgets/app_buttons.dart';
+import '../../widgets/section_header.dart';
 import '../../theme/tokens.dart';
 import '../vacations/vacations_controller.dart';
 
@@ -159,20 +161,15 @@ class _VacationsSheetState extends ConsumerState<_VacationsSheet> {
               ),
             ],
             const SizedBox(height: AppSpacing.m),
-            FilledButton.icon(
+            PrimaryButton(
               key: const Key('vacation-add'),
+              icon: Icons.beach_access_outlined,
+              label: 'Ajouter ces congés',
               onPressed: _submit,
-              icon: const Icon(Icons.beach_access_outlined),
-              label: const Text('Ajouter ces congés'),
-              style: FilledButton.styleFrom(
-                minimumSize:
-                    const Size.fromHeight(AppSizes.minTouchTarget + 4),
-              ),
             ),
             const SizedBox(height: AppSpacing.xl),
             if (periods.isNotEmpty) ...[
-              Text('Périodes existantes', style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.s),
+              const SectionHeader('Périodes existantes', topSpacing: 0),
               for (final period in periods)
                 ListTile(
                   contentPadding: EdgeInsets.zero,

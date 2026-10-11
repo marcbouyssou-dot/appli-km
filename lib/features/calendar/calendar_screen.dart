@@ -4,8 +4,10 @@ import 'package:intl/intl.dart';
 
 import '../../domain/models/civil_date.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/app_buttons.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/placeholder_card.dart';
+import '../../widgets/period_selector.dart';
 import 'calendar_controller.dart';
 import 'day_detail_screen.dart';
 import 'vacations_sheet.dart';
@@ -71,45 +73,15 @@ class _CalendarView extends ConsumerWidget {
       children: [
         const ScreenTitle('Calendrier'),
 
-        // Navigation mensuelle : chevrons larges, pas de mini-cibles.
-        Row(
-          children: [
-            IconButton(
-              key: const Key('cal-prev'),
-              onPressed: controller.previousMonth,
-              icon: const Icon(Icons.chevron_left),
-              iconSize: 30,
-              tooltip: 'Mois précédent',
-              style: IconButton.styleFrom(
-                minimumSize: const Size(
-                  AppSizes.minTouchTarget + 8,
-                  AppSizes.minTouchTarget + 8,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Text(
-                _monthLabel,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            IconButton(
-              key: const Key('cal-next'),
-              onPressed: controller.nextMonth,
-              icon: const Icon(Icons.chevron_right),
-              iconSize: 30,
-              tooltip: 'Mois suivant',
-              style: IconButton.styleFrom(
-                minimumSize: const Size(
-                  AppSizes.minTouchTarget + 8,
-                  AppSizes.minTouchTarget + 8,
-                ),
-              ),
-            ),
-          ],
+        // Navigation mensuelle : sélecteur partagé, chevrons larges.
+        PeriodSelector(
+          label: _monthLabel,
+          onPrevious: controller.previousMonth,
+          onNext: controller.nextMonth,
+          previousKey: const Key('cal-prev'),
+          nextKey: const Key('cal-next'),
+          previousTooltip: 'Mois précédent',
+          nextTooltip: 'Mois suivant',
         ),
 
         // Total du mois, dérivé des données.
@@ -137,18 +109,11 @@ class _CalendarView extends ConsumerWidget {
             ),
           ),
         Center(
-          child: TextButton.icon(
+          child: QuietButton(
             key: const Key('cal-vacations-button'),
             onPressed: () => showVacationsSheet(context),
-            icon: const Icon(Icons.beach_access_outlined),
-            label: const Text('Ajouter des congés'),
-            style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.onSurfaceVariant,
-              minimumSize: const Size(
-                AppSizes.minTouchTarget * 3,
-                AppSizes.minTouchTarget,
-              ),
-            ),
+            icon: Icons.beach_access_outlined,
+            label: 'Ajouter des congés',
           ),
         ),
         const SizedBox(height: AppSpacing.m),

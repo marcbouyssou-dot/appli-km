@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/tokens.dart';
+import '../../widgets/grouped_list.dart';
 import '../../widgets/placeholder_card.dart';
 import '../backup/backup_screen.dart';
 import '../documents/documents_screen.dart';
@@ -39,6 +40,10 @@ class MoreScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
       children: [
         const ScreenTitle('Plus'),
+        // Une seule surface groupée (UX-001) : mêmes cinq entrées, même
+        // ordre — seule la présentation change.
+        GroupedList(
+          children: [
         // Gestion GLOBALE des trajets favoris (créer/modifier/supprimer/
         // réordonner) — volontairement hors du contexte d'une journée.
         tile(
@@ -70,6 +75,8 @@ class MoreScreen extends StatelessWidget {
           title: 'Réglages',
           subtitle: 'Informations pour les documents',
           screen: () => const SettingsScreen(),
+        ),
+          ],
         ),
       ],
     );

@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/grouped_list.dart';
+import '../../widgets/km_badge.dart';
 import '../../widgets/km_format.dart';
+import '../../widgets/section_header.dart';
 import '../../domain/models/civil_date.dart';
 import '../day/day_controller.dart';
 import '../vacations/vacation_guard.dart';
@@ -116,11 +119,9 @@ class FavoritesSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Trajets favoris', style: theme.textTheme.titleMedium),
-        const SizedBox(height: AppSpacing.s),
-        Card(
-          child: Column(
-            children: [
+        const SectionHeader('Trajets favoris', topSpacing: 0),
+        GroupedList(
+          children: [
               for (final favorite in favorites)
                 // Deux intentions, deux zones nettement séparées :
                 // la ligne = AJOUTER le trajet ; « Modifier » = éditer le
@@ -139,24 +140,8 @@ class FavoritesSection extends ConsumerWidget {
                           ),
                         ),
                         subtitle: _subtitle(favorite),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.m,
-                            vertical: AppSpacing.s,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primaryContainer,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.m),
-                          ),
-                          child: Text(
-                            '+${formatKm(favorite.distanceKm)}',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: theme.colorScheme.onPrimaryContainer,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                        trailing:
+                            KmBadge('+${formatKm(favorite.distanceKm)}'),
                       ),
                     ),
                     Padding(
@@ -194,8 +179,7 @@ class FavoritesSection extends ConsumerWidget {
                   ),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
         const SizedBox(height: AppSpacing.l),
       ],

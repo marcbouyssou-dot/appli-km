@@ -4,8 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/logic/fiscal_estimator.dart';
 import '../../domain/models/vehicle.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/grouped_list.dart';
 import '../../widgets/km_format.dart';
+import '../../widgets/period_selector.dart';
 import '../../widgets/placeholder_card.dart';
+import '../../widgets/section_header.dart';
+import '../../widgets/status_banner.dart';
 import '../vehicles/vehicles_screen.dart';
 import 'monthly_bar_chart.dart';
 import 'statistics_controller.dart';
@@ -61,52 +66,20 @@ class _StatisticsView extends ConsumerWidget {
     final delta = stats.previousYearDelta;
     final percent = stats.previousYearPercent;
 
-    Widget sectionTitle(String text) => Padding(
-          padding: const EdgeInsets.only(
-            top: AppSpacing.xl,
-            bottom: AppSpacing.s,
-          ),
-          child: Text(
-            text,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              letterSpacing: 1.1,
-            ),
-          ),
-        );
-
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
       children: [
         const ScreenTitle('Statistiques'),
 
-        // Navigation d'année : chevrons larges.
-        Row(
-          children: [
-            IconButton(
-              key: const Key('stats-prev-year'),
-              onPressed: controller.previousYear,
-              icon: const Icon(Icons.chevron_left),
-              iconSize: 30,
-              tooltip: 'Année précédente',
-            ),
-            Expanded(
-              child: Text(
-                '${stats.year}',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            IconButton(
-              key: const Key('stats-next-year'),
-              onPressed: controller.nextYear,
-              icon: const Icon(Icons.chevron_right),
-              iconSize: 30,
-              tooltip: 'Année suivante',
-            ),
-          ],
+        // Navigation d'année : sélecteur partagé, chevrons larges.
+        PeriodSelector(
+          label: '${stats.year}',
+          onPrevious: controller.previousYear,
+          onNext: controller.nextYear,
+          previousKey: const Key('stats-prev-year'),
+          nextKey: const Key('stats-next-year'),
+          previousTooltip: 'Année précédente',
+          nextTooltip: 'Année suivante',
         ),
         if (!stats.isCurrentYear)
           Center(
@@ -118,7 +91,7 @@ class _StatisticsView extends ConsumerWidget {
           ),
 
         // TOTAL ANNÉE — le chiffre le plus important, en grand.
-        sectionTitle('TOTAL ANNÉE'),
+        const SectionHeader('TOTAL ANNÉE'),
         Card(
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -155,7 +128,7 @@ class _StatisticsView extends ConsumerWidget {
         ),
 
         // Mois sélectionné (indépendant du calendrier principal).
-        sectionTitle('MOIS'),
+        const SectionHeader('MOIS'),
         Card(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
@@ -215,7 +188,7 @@ class _StatisticsView extends ConsumerWidget {
           ],
         ),
 
-        sectionTitle('ÉVOLUTION MENSUELLE'),
+        const SectionHeader('ÉVOLUTION MENSUELLE'),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.l),
@@ -223,20 +196,16 @@ class _StatisticsView extends ConsumerWidget {
           ),
         ),
 
-        sectionTitle('PAR VÉHICULE'),
+        const SectionHeader('PAR VÉHICULE'),
         if (stats.vehicleStats.isEmpty)
-          Text(
+          EmptyState(
             stats.yearTotal == 0
                 ? 'Aucun kilomètre enregistré en ${stats.year}.'
                 : 'Aucune attribution de véhicule.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
           )
         else
-          Card(
-            child: Column(
-              children: [
+          GroupedList(
+            children: [
                 for (final stat in stats.vehicleStats)
                   ListTile(
                     key: Key('vehicle-stat-${stat.vehicleId ?? 'none'}'),
@@ -255,12 +224,11 @@ class _StatisticsView extends ConsumerWidget {
                       '${stats.year} : ${formatKmGrouped(stat.yearKm)}',
                     ),
                   ),
-              ],
-            ),
+            ],
           ),
 
         // SIMULATEUR INDICATIF (KM-013) : jamais une déduction fiscale.
-        sectionTitle('ESTIMATION KILOMÉTRIQUE'),
+        const SectionHeader('ESTIMATION KILOMÉTRIQUE'),
         _FiscalEstimationSection(stats: stats),
 
         if (stats.vacationDays > 0) ...[
@@ -373,20 +341,13 @@ class _FiscalEstimationSection extends ConsumerWidget {
       children: [
         if (fiscal.isProvisional)
           // Affiché EN PERMANENCE pendant une simulation provisoire.
-          Card(
+          // Registre WARNING (UX-001) : provisoire = ambre, jamais la
+          // couleur primaire ni celle des congés.
+          StatusBanner(
             key: const Key('fiscal-provisional-banner'),
-            color: theme.colorScheme.tertiaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.m),
-              child: Text(
-                'Simulation indicative — barème des revenus '
+            kind: StatusBannerKind.warning,
+            text: 'Simulation indicative — barème des revenus '
                 '${reference.incomeYear}.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onTertiaryContainer,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
           )
         else
           Text(
@@ -396,9 +357,8 @@ class _FiscalEstimationSection extends ConsumerWidget {
             style: muted,
           ),
         const SizedBox(height: AppSpacing.s),
-        Card(
-          child: Column(
-            children: [
+        GroupedList(
+          children: [
               for (final row in fiscal.rows)
                 ListTile(
                   key: Key('fiscal-row-${row.vehicleId}'),
@@ -453,7 +413,6 @@ class _FiscalEstimationSection extends ConsumerWidget {
                   ),
                 ),
               if (fiscal.estimatedRows.isNotEmpty) ...[
-                const Divider(height: 1),
                 ListTile(
                   key: const Key('fiscal-total'),
                   minTileHeight: AppSizes.minTouchTarget,
@@ -475,8 +434,7 @@ class _FiscalEstimationSection extends ConsumerWidget {
                   ),
                 ),
               ],
-            ],
-          ),
+          ],
         ),
         if (fiscal.unattributedKm > 0) ...[
           const SizedBox(height: AppSpacing.s),

@@ -7,7 +7,11 @@ import '../../domain/models/civil_date.dart';
 import '../../domain/models/trip.dart';
 import '../../domain/models/vacation_period.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/app_buttons.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/grouped_list.dart';
 import '../../widgets/km_format.dart';
+import '../../widgets/section_header.dart';
 import '../../domain/models/vehicle.dart';
 import '../today/favorites_section.dart';
 import '../vacations/vacation_guard.dart';
@@ -378,31 +382,21 @@ class _DayContent extends ConsumerWidget {
         // Favoris : ajout en un toucher, Trip daté de CETTE journée.
         FavoritesSection(date: day.date),
 
-        FilledButton.tonalIcon(
+        PrimaryButton(
+          tonal: true,
+          icon: Icons.add,
+          label: 'Ajouter un trajet',
           onPressed: () => _addTrip(context, ref),
-          icon: const Icon(Icons.add),
-          label: const Text('Ajouter un trajet'),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(AppSizes.minTouchTarget + 8),
-          ),
         ),
         const SizedBox(height: AppSpacing.xl),
 
         if (day.isEmpty)
-          Text(
-            'Aucun kilomètre enregistré ce jour-là.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          const EmptyState('Aucun kilomètre enregistré ce jour-là.'),
 
         if (day.trips.isNotEmpty) ...[
-          Text('Trajets détaillés', style: theme.textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.s),
-          Card(
-            child: Column(
-              children: [
+          const SectionHeader('Trajets détaillés', topSpacing: 0),
+          GroupedList(
+            children: [
                 for (final trip in day.trips)
                   ListTile(
                     onTap: () => _editTrip(context, ref, trip),
@@ -434,15 +428,13 @@ class _DayContent extends ConsumerWidget {
                       onPressed: () => _deleteTrip(context, ref, trip),
                     ),
                   ),
-              ],
-            ),
+            ],
           ),
           const SizedBox(height: AppSpacing.l),
         ],
 
         if (day.extra != null) ...[
-          Text('Autres kilomètres', style: theme.textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.s),
+          const SectionHeader('Autres kilomètres', topSpacing: 0),
           Card(
             child: ListTile(
               key: const Key('day-extra-tile'),
@@ -471,18 +463,11 @@ class _DayContent extends ConsumerWidget {
         if (!isVacation) ...[
           const SizedBox(height: AppSpacing.l),
           Center(
-            child: TextButton.icon(
+            child: QuietButton(
               key: const Key('mark-vacation-button'),
               onPressed: () => _markVacation(context, ref),
-              icon: const Icon(Icons.beach_access_outlined),
-              label: const Text('Marquer comme congé'),
-              style: TextButton.styleFrom(
-                foregroundColor: theme.colorScheme.onSurfaceVariant,
-                minimumSize: const Size(
-                  AppSizes.minTouchTarget * 3,
-                  AppSizes.minTouchTarget,
-                ),
-              ),
+              icon: Icons.beach_access_outlined,
+              label: 'Marquer comme congé',
             ),
           ),
         ],
@@ -491,21 +476,11 @@ class _DayContent extends ConsumerWidget {
         if (!day.isEmpty) ...[
           const SizedBox(height: AppSpacing.l),
           Center(
-            child: TextButton.icon(
+            child: QuietButton(
               key: const Key('clear-day-button'),
               onPressed: () => _confirmClearDay(context, ref),
-              icon: const Icon(Icons.restart_alt),
-              label: const Text('Effacer la journée'),
-              style: TextButton.styleFrom(
-                foregroundColor: theme.colorScheme.onSurfaceVariant,
-                minimumSize: const Size(
-                  AppSizes.minTouchTarget * 3,
-                  AppSizes.minTouchTarget,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                ),
-              ),
+              icon: Icons.restart_alt,
+              label: 'Effacer la journée',
             ),
           ),
         ],
