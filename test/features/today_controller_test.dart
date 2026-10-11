@@ -86,6 +86,40 @@ void main() {
     );
   });
 
+  test(
+      'RÉGRESSION iPhone KM-004A : extra 87 seul puis total 0 '
+      '=> accepté, DayExtra absent, total 0', () async {
+    await controller().declareTotal(87);
+    expect((await state()).extraKm, 87);
+
+    final result = await controller().declareTotal(0);
+
+    expect(result, isA<DailyTotalAdjusted>());
+    final s = await state();
+    expect(s.totalKm, 0);
+    expect(s.extra, isNull);
+    expect(s.isEmpty, isTrue,
+        reason: 'aucune donnée kilométrique restante pour la journée');
+    expect(
+      await SembastDayExtraRepository(database.db).getForDate(day),
+      isNull,
+    );
+  });
+
+  test('total 0 avec trajets détaillés => refus, aucun Trip supprimé',
+      () async {
+    await seedTrips2418();
+
+    final result = await controller().declareTotal(0);
+
+    result as DailyTotalBelowDetailed;
+    expect(result.detailedKm, 42);
+    expect(result.requestedKm, 0);
+    final s = await state();
+    expect(s.trips, hasLength(2));
+    expect(s.totalKm, 42);
+  });
+
   test('24 + 18 puis total 40 => refus, stockage inchangé', () async {
     await seedTrips2418();
     await controller().declareTotal(87);

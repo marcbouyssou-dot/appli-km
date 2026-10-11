@@ -57,10 +57,19 @@ class _TotalEntrySheetState extends State<_TotalEntrySheet> {
   Future<void> _submit() async {
     final value = parseKmInput(_controller.text);
     if (value == null || value < 0) {
-      setState(() => _errorText = 'Saisissez un nombre de kilomètres valide.');
+      setState(() => _errorText =
+          'Saisissez un nombre de kilomètres valide (0 pour remettre à zéro).');
       return;
     }
+    await _apply(value);
+  }
 
+  /// Le total 0 est une valeur légitime : il efface les kilomètres non
+  /// détaillés (les trajets détaillés, eux, ne sont jamais supprimés par
+  /// cette action — un refus métier l'explique si besoin).
+  Future<void> _resetToZero() => _apply(0);
+
+  Future<void> _apply(double value) async {
     setState(() {
       _submitting = true;
       _errorText = null;
@@ -128,6 +137,16 @@ class _TotalEntrySheetState extends State<_TotalEntrySheet> {
             ),
             child: const Text('Valider'),
           ),
+          if (widget.currentTotalKm > 0) ...[
+            const SizedBox(height: AppSpacing.s),
+            OutlinedButton(
+              onPressed: _submitting ? null : _resetToZero,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(AppSizes.minTouchTarget),
+              ),
+              child: const Text('Remettre la journée à zéro'),
+            ),
+          ],
           const SizedBox(height: AppSpacing.s),
           TextButton(
             onPressed:

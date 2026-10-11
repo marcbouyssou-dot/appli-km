@@ -128,6 +128,68 @@ void main() {
     expect(find.text('45 km'), findsOneWidget);
   });
 
+  testWidgets(
+      'RÉGRESSION iPhone KM-004A : extra 87 seul, saisir 0 => journée vide',
+      (tester) async {
+    await seedExtra(tester, 87);
+
+    await pumpApp(tester);
+    expect(find.text('87 km'), findsNWidgets(2)); // total + autres km
+
+    await tester.tap(find.text('Saisir le total du jour'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '0');
+    await tester.tap(find.text('Valider'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('0 km'), findsOneWidget);
+    expect(find.text('Autres kilomètres'), findsNothing);
+    expect(
+      find.text('Aucun kilomètre enregistré aujourd’hui.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('bouton « Remettre la journée à zéro » efface l’extra',
+      (tester) async {
+    await seedExtra(tester, 87);
+
+    await pumpApp(tester);
+    await tester.tap(find.text('Saisir le total du jour'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Remettre la journée à zéro'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('0 km'), findsOneWidget);
+    expect(find.text('Autres kilomètres'), findsNothing);
+  });
+
+  testWidgets(
+      'remise à zéro avec trajets détaillés => refus métier, trips intacts',
+      (tester) async {
+    await seedTrip(tester, 't-1', 24);
+    await seedTrip(tester, 't-2', 18);
+
+    await pumpApp(tester);
+    await tester.tap(find.text('Saisir le total du jour'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Remettre la journée à zéro'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Les trajets détaillés totalisent déjà 42 km.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Annuler'));
+    await tester.pumpAndSettle();
+    expect(find.text('42 km'), findsOneWidget);
+    expect(find.text('24 km'), findsOneWidget);
+    expect(find.text('18 km'), findsOneWidget);
+  });
+
   testWidgets('refus d’un total inférieur aux trajets détaillés',
       (tester) async {
     await seedTrip(tester, 't-1', 24);
