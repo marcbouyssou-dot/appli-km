@@ -201,8 +201,13 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
               onChanged: (value) =>
                   setState(() => _defaultRoundTrip = value),
               title: const Text('Aller-retour'),
-              subtitle:
-                  const Text('Indicatif : ne modifie pas la distance saisie.'),
+              // Une distance déjà saisie n'est jamais doublée
+              // automatiquement ; seul le calcul d'itinéraire en tient compte.
+              subtitle: Text(_defaultRoundTrip
+                  ? 'Le calcul d\u2019itinéraire proposera la distance '
+                      'aller-retour.'
+                  : 'Le calcul d\u2019itinéraire proposera la distance '
+                      'aller.'),
               contentPadding: EdgeInsets.zero,
             ),
             TextField(

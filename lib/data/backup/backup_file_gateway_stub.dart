@@ -15,6 +15,14 @@ class UnsupportedBackupFileGateway implements BackupFileGateway {
       _unsupported();
 
   @override
+  Future<BackupSaveOutcome> saveFile({
+    required String fileName,
+    required List<int> bytes,
+    required String mimeType,
+  }) async =>
+      _unsupported();
+
+  @override
   Future<String?> pickBackupFile() async => _unsupported();
 }
 

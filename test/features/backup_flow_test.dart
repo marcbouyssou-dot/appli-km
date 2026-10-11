@@ -38,6 +38,24 @@ class FakeBackupFileGateway implements BackupFileGateway {
     return BackupSaveOutcome.completed;
   }
 
+  String? savedBinaryName;
+  List<int>? savedBytes;
+  String? savedMimeType;
+
+  @override
+  Future<BackupSaveOutcome> saveFile({
+    required String fileName,
+    required List<int> bytes,
+    required String mimeType,
+  }) async {
+    if (saveError != null) throw saveError!;
+    if (cancelShare) return BackupSaveOutcome.cancelled;
+    savedBinaryName = fileName;
+    savedBytes = bytes;
+    savedMimeType = mimeType;
+    return BackupSaveOutcome.completed;
+  }
+
   @override
   Future<String?> pickBackupFile() async => cancelPick ? null : fileToPick;
 }

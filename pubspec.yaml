@@ -20,6 +20,12 @@ dependencies:
   flutter_riverpod: ^3.3.2
   web: ^1.1.1
   http: ^1.6.0
+  pdf: ^3.12.0
+  # Transitif de pdf, épinglé : image 4.11.0 déclare archive ^4.0.9 mais
+  # utilise une API d'archive >=4.4 (bug corrigé en 4.11.1, incompatible
+  # avec pdf 3.12 qui exige archive <4.1). À retirer quand pdf >=3.13.1
+  # sera installable (Dart >=3.12).
+  image: '>=4.1.0 <4.11.0'
 
 dev_dependencies:
   flutter_test:

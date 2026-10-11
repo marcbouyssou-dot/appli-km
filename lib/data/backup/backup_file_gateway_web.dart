@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
@@ -40,8 +41,26 @@ class WebBackupFileGateway implements BackupFileGateway {
   Future<BackupSaveOutcome> saveBackupFile({
     required String fileName,
     required String content,
-  }) async {
+  }) {
     final file = buildBackupFile(fileName: fileName, content: content);
+    return _offerFile(file, fileName);
+  }
+
+  @override
+  Future<BackupSaveOutcome> saveFile({
+    required String fileName,
+    required List<int> bytes,
+    required String mimeType,
+  }) {
+    final file = web.File(
+      [Uint8List.fromList(bytes).toJS].toJS,
+      fileName,
+      web.FilePropertyBag(type: mimeType),
+    );
+    return _offerFile(file, fileName);
+  }
+
+  Future<BackupSaveOutcome> _offerFile(web.File file, String fileName) async {
 
     final navigator = web.window.navigator;
     final shareData = web.ShareData(files: [file].toJS);

@@ -16,6 +16,15 @@ abstract interface class BackupFileGateway {
     required String content,
   });
 
+  /// Frontière GÉNÉRIQUE de partage/enregistrement de fichier (PDF, CSV…) :
+  /// mêmes règles que le backup — détection de capacités avant tout appel,
+  /// partage si possible, repli téléchargement, annulation ≠ erreur.
+  Future<BackupSaveOutcome> saveFile({
+    required String fileName,
+    required List<int> bytes,
+    required String mimeType,
+  });
+
   /// Ouvre un sélecteur de fichier et retourne le contenu texte,
   /// ou null si l'utilisateur annule.
   Future<String?> pickBackupFile();
