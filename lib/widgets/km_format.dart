@@ -28,3 +28,9 @@ String formatKmGrouped(double km) {
   final value = normalizeKm(km);
   return '${NumberFormat('#,##0.#', 'fr_FR').format(value)} km';
 }
+
+/// Montant indicatif en euros, ARRONDI à l'euro (« 3 149 € ») : une
+/// estimation affichée au centime suggérerait une précision fiscale
+/// qu'elle n'a pas.
+String formatEurRounded(double eur) =>
+    '${NumberFormat('#,##0', 'fr_FR').format(eur.round())} €';

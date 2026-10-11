@@ -198,7 +198,7 @@ void main() {
         vacationPeriods: const [],
         settings: AppSettings(),
       );
-      expect(json, contains('"schemaVersion": 2'));
+      expect(json, contains('"schemaVersion": 3'));
 
       final content = decodeBackup(json);
       expect(content.dayExtras.single.vehicleId, 'v-1');
@@ -220,7 +220,7 @@ void main() {
 
     test('version future : refus explicite, jamais partiel', () {
       final json = encodeFull().replaceFirst(
-          '"schemaVersion": 2', '"schemaVersion": 99');
+          '"schemaVersion": 3', '"schemaVersion": 99');
       expect(() => decodeBackup(json),
           throwsA(isA<BackupTooRecentException>()));
       expect(BackupTooRecentException().toString(),

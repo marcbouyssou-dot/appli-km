@@ -53,6 +53,8 @@ class VehiclesController extends AsyncNotifier<VehiclesState> {
     required VehicleCategory category,
     int? fiscalPowerCv,
     String? registration,
+    Motorization motorization = Motorization.unspecified,
+    TwoWheelerFiscalClass? twoWheelerClass,
   }) async {
     final current = await future;
     final vehicle = Vehicle(
@@ -61,6 +63,8 @@ class VehiclesController extends AsyncNotifier<VehiclesState> {
       category: category,
       fiscalPowerCv: fiscalPowerCv,
       registration: registration,
+      motorization: motorization,
+      twoWheelerClass: twoWheelerClass,
     );
     await ref.read(vehicleRepositoryProvider).put(vehicle);
 
@@ -78,6 +82,8 @@ class VehiclesController extends AsyncNotifier<VehiclesState> {
     required VehicleCategory category,
     int? fiscalPowerCv,
     String? registration,
+    Motorization motorization = Motorization.unspecified,
+    TwoWheelerFiscalClass? twoWheelerClass,
   }) async {
     await ref.read(vehicleRepositoryProvider).put(Vehicle(
           id: original.id,
@@ -85,6 +91,8 @@ class VehiclesController extends AsyncNotifier<VehiclesState> {
           category: category,
           fiscalPowerCv: fiscalPowerCv,
           registration: registration,
+          motorization: motorization,
+          twoWheelerClass: twoWheelerClass,
           archivedAt: original.archivedAt,
         ));
     await _refresh();
@@ -133,6 +141,8 @@ class VehiclesController extends AsyncNotifier<VehiclesState> {
           category: vehicle.category,
           fiscalPowerCv: vehicle.fiscalPowerCv,
           registration: vehicle.registration,
+          motorization: vehicle.motorization,
+          twoWheelerClass: vehicle.twoWheelerClass,
         ));
     await _refresh();
   }

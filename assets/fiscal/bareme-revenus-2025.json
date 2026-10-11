@@ -1,0 +1,100 @@
+{
+  "referenceVersion": 1,
+  "incomeYear": 2025,
+  "publicationYear": 2026,
+  "source": "DGFiP, Brochure pratique IR 2026 (déclaration des revenus 2025), p. 25 ; BOFiP BOI-BAREME-000001 (version en vigueur du 20/07/2023, arrêté du 27 mars 2023) ; barème reconduit sans revalorisation pour les revenus 2025 ; majoration de 20 % pour les véhicules 100 % électriques (CGI, ann. IV, art. 6 B, II).",
+  "verifiedAt": "2026-10-11",
+  "electricMultiplier": 1.2,
+  "scales": [
+    {
+      "kind": "car",
+      "powerMinCv": null,
+      "powerMaxCv": 3,
+      "brackets": [
+        { "maxKm": 5000, "rate": 0.529, "constant": 0 },
+        { "maxKm": 20000, "rate": 0.316, "constant": 1065 },
+        { "maxKm": null, "rate": 0.370, "constant": 0 }
+      ]
+    },
+    {
+      "kind": "car",
+      "powerMinCv": 4,
+      "powerMaxCv": 4,
+      "brackets": [
+        { "maxKm": 5000, "rate": 0.606, "constant": 0 },
+        { "maxKm": 20000, "rate": 0.340, "constant": 1330 },
+        { "maxKm": null, "rate": 0.407, "constant": 0 }
+      ]
+    },
+    {
+      "kind": "car",
+      "powerMinCv": 5,
+      "powerMaxCv": 5,
+      "brackets": [
+        { "maxKm": 5000, "rate": 0.636, "constant": 0 },
+        { "maxKm": 20000, "rate": 0.357, "constant": 1395 },
+        { "maxKm": null, "rate": 0.427, "constant": 0 }
+      ]
+    },
+    {
+      "kind": "car",
+      "powerMinCv": 6,
+      "powerMaxCv": 6,
+      "brackets": [
+        { "maxKm": 5000, "rate": 0.665, "constant": 0 },
+        { "maxKm": 20000, "rate": 0.374, "constant": 1457 },
+        { "maxKm": null, "rate": 0.447, "constant": 0 }
+      ]
+    },
+    {
+      "kind": "car",
+      "powerMinCv": 7,
+      "powerMaxCv": null,
+      "brackets": [
+        { "maxKm": 5000, "rate": 0.697, "constant": 0 },
+        { "maxKm": 20000, "rate": 0.394, "constant": 1515 },
+        { "maxKm": null, "rate": 0.470, "constant": 0 }
+      ]
+    },
+    {
+      "kind": "motorcycle",
+      "powerMinCv": null,
+      "powerMaxCv": 2,
+      "brackets": [
+        { "maxKm": 3000, "rate": 0.395, "constant": 0 },
+        { "maxKm": 6000, "rate": 0.099, "constant": 891 },
+        { "maxKm": null, "rate": 0.248, "constant": 0 }
+      ]
+    },
+    {
+      "kind": "motorcycle",
+      "powerMinCv": 3,
+      "powerMaxCv": 5,
+      "brackets": [
+        { "maxKm": 3000, "rate": 0.468, "constant": 0 },
+        { "maxKm": 6000, "rate": 0.082, "constant": 1158 },
+        { "maxKm": null, "rate": 0.275, "constant": 0 }
+      ]
+    },
+    {
+      "kind": "motorcycle",
+      "powerMinCv": 6,
+      "powerMaxCv": null,
+      "brackets": [
+        { "maxKm": 3000, "rate": 0.606, "constant": 0 },
+        { "maxKm": 6000, "rate": 0.079, "constant": 1583 },
+        { "maxKm": null, "rate": 0.343, "constant": 0 }
+      ]
+    },
+    {
+      "kind": "moped",
+      "powerMinCv": null,
+      "powerMaxCv": null,
+      "brackets": [
+        { "maxKm": 3000, "rate": 0.315, "constant": 0 },
+        { "maxKm": 6000, "rate": 0.079, "constant": 711 },
+        { "maxKm": null, "rate": 0.198, "constant": 0 }
+      ]
+    }
+  ]
+}

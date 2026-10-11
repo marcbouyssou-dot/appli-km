@@ -8,8 +8,32 @@ import 'vehicles_controller.dart';
 
 /// Gestion des véhicules : liste, principal, archivage/réactivation.
 /// Grandes zones tactiles, actions textuelles explicites — pas de « … ».
-class VehiclesScreen extends ConsumerWidget {
-  const VehiclesScreen({super.key});
+/// [initialVehicleId] : ouvre directement la fiche de ce véhicule
+/// (raccourci « Compléter le véhicule » depuis l'estimation — KM-013).
+class VehiclesScreen extends ConsumerStatefulWidget {
+  const VehiclesScreen({super.key, this.initialVehicleId});
+
+  final String? initialVehicleId;
+
+  @override
+  ConsumerState<VehiclesScreen> createState() => _VehiclesScreenState();
+}
+
+class _VehiclesScreenState extends ConsumerState<VehiclesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final initialId = widget.initialVehicleId;
+    if (initialId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final state = await ref.read(vehiclesControllerProvider.future);
+        final vehicle = state.byId(initialId);
+        if (vehicle != null && mounted) {
+          await _edit(context, ref, vehicle);
+        }
+      });
+    }
+  }
 
   Future<void> _create(BuildContext context, WidgetRef ref) async {
     final result = await showVehicleFormSheet(context);
@@ -19,6 +43,8 @@ class VehiclesScreen extends ConsumerWidget {
           category: result.category,
           fiscalPowerCv: result.fiscalPowerCv,
           registration: result.registration,
+          motorization: result.motorization,
+          twoWheelerClass: result.twoWheelerClass,
         );
   }
 
@@ -32,6 +58,8 @@ class VehiclesScreen extends ConsumerWidget {
           category: result.category,
           fiscalPowerCv: result.fiscalPowerCv,
           registration: result.registration,
+          motorization: result.motorization,
+          twoWheelerClass: result.twoWheelerClass,
         );
   }
 
@@ -67,15 +95,27 @@ class VehiclesScreen extends ConsumerWidget {
 
   String _subtitle(Vehicle vehicle) {
     final parts = [
-      vehicle.category == VehicleCategory.car ? 'Voiture' : 'Deux-roues',
+      switch (vehicle.category) {
+        VehicleCategory.car => 'Voiture',
+        VehicleCategory.twoWheeler => switch (vehicle.twoWheelerClass) {
+            null => 'Deux-roues (type à préciser)',
+            TwoWheelerFiscalClass.motorcycle => 'Moto',
+            TwoWheelerFiscalClass.moped => 'Cyclomoteur',
+          },
+      },
       if (vehicle.fiscalPowerCv != null) '${vehicle.fiscalPowerCv} CV',
+      switch (vehicle.motorization) {
+        Motorization.electric => 'Électrique',
+        Motorization.other => 'Autre motorisation',
+        Motorization.unspecified => 'Motorisation non renseignée',
+      },
       if (vehicle.registration != null) vehicle.registration!,
     ];
     return parts.join(' · ');
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final state = ref.watch(vehiclesControllerProvider).value;
     final active = state?.active ?? const <Vehicle>[];

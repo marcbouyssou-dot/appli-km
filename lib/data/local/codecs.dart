@@ -135,12 +135,45 @@ VehicleCategory vehicleCategoryFromDb(String value) => switch (value) {
       _ => throw FormatException('Catégorie de véhicule inconnue : "$value"'),
     };
 
+String? motorizationToDb(Motorization motorization) => switch (motorization) {
+      Motorization.electric => 'electric',
+      Motorization.other => 'other',
+      Motorization.unspecified => null,
+    };
+
+/// Champ absent (véhicules d'avant KM-013) = motorisation NON RENSEIGNÉE :
+/// on ne suppose jamais qu'un ancien véhicule est thermique.
+Motorization motorizationFromDb(Object? value) => switch (value) {
+      null => Motorization.unspecified,
+      'electric' => Motorization.electric,
+      'other' => Motorization.other,
+      _ => throw FormatException('Motorisation inconnue : "$value"'),
+    };
+
+String? twoWheelerClassToDb(TwoWheelerFiscalClass? twoWheelerClass) =>
+    switch (twoWheelerClass) {
+      null => null,
+      TwoWheelerFiscalClass.motorcycle => 'motorcycle',
+      TwoWheelerFiscalClass.moped => 'moped',
+    };
+
+TwoWheelerFiscalClass? twoWheelerClassFromDb(Object? value) => switch (value) {
+      null => null,
+      'motorcycle' => TwoWheelerFiscalClass.motorcycle,
+      'moped' => TwoWheelerFiscalClass.moped,
+      _ => throw FormatException('Classe deux-roues inconnue : "$value"'),
+    };
+
 Map<String, Object?> vehicleToDb(Vehicle vehicle) => {
       'name': vehicle.name,
       'category': vehicleCategoryToDb(vehicle.category),
       if (vehicle.fiscalPowerCv != null)
         'fiscalPowerCv': vehicle.fiscalPowerCv,
       if (vehicle.registration != null) 'registration': vehicle.registration,
+      if (motorizationToDb(vehicle.motorization) != null)
+        'motorization': motorizationToDb(vehicle.motorization),
+      if (vehicle.twoWheelerClass != null)
+        'twoWheelerClass': twoWheelerClassToDb(vehicle.twoWheelerClass),
       if (vehicle.archivedAt != null)
         'archivedAt': vehicle.archivedAt!.toUtc().toIso8601String(),
     };
@@ -151,6 +184,8 @@ Vehicle vehicleFromDb(String id, Map<String, Object?> map) => Vehicle(
       category: vehicleCategoryFromDb(_requireString(map, 'category')),
       fiscalPowerCv: map['fiscalPowerCv'] as int?,
       registration: map['registration'] as String?,
+      motorization: motorizationFromDb(map['motorization']),
+      twoWheelerClass: twoWheelerClassFromDb(map['twoWheelerClass']),
       archivedAt: map['archivedAt'] is String
           ? DateTime.parse(map['archivedAt'] as String)
           : null,

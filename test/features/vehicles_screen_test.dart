@@ -63,7 +63,9 @@ void main() {
 
     expect(find.text('Peugeot 3008'), findsOneWidget);
     expect(find.text('Principal'), findsOneWidget);
-    expect(find.text('Voiture · 6 CV'), findsOneWidget);
+    expect(
+        find.text('Voiture · 6 CV · Motorisation non renseignée'),
+        findsOneWidget);
   });
 
   testWidgets('changer de principal via l’action explicite',

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/backup/backup_file_gateway.dart';
 import '../data/backup/backup_service.dart';
+import '../data/fiscal/fiscal_reference_store.dart';
 import '../data/backup/platform_backup_file_gateway.dart';
 import '../data/ids.dart';
 import '../data/local/app_database.dart';
@@ -79,6 +80,14 @@ final backupFileGatewayProvider = Provider<BackupFileGateway>(
 /// explicite de l'utilisateur — jamais en arrière-plan.
 final routeDistanceServiceProvider = Provider<RouteDistanceService>(
   (ref) => OsmRouteService(),
+);
+
+/// Référentiels fiscaux embarqués (assets locaux, jamais téléchargés).
+/// Chargés UNE fois au bootstrap (en parallèle de la base) et injectés en
+/// valeur synchrone — comme [databaseProvider]. Les tests surchargent avec
+/// des fixtures ; sans surcharge : magasin vide (aucun barème appliqué).
+final fiscalReferenceStoreProvider = Provider<FiscalReferenceStore>(
+  (ref) => FiscalReferenceStore(const []),
 );
 
 /// Date civile « aujourd'hui », surchargeable en test.

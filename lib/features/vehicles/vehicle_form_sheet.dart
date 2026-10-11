@@ -10,12 +10,16 @@ class VehicleFormResult {
     required this.category,
     this.fiscalPowerCv,
     this.registration,
+    this.motorization = Motorization.unspecified,
+    this.twoWheelerClass,
   });
 
   final String name;
   final VehicleCategory category;
   final int? fiscalPowerCv;
   final String? registration;
+  final Motorization motorization;
+  final TwoWheelerFiscalClass? twoWheelerClass;
 }
 
 /// Feuille de création/modification d'un véhicule.
@@ -46,6 +50,8 @@ class _VehicleFormSheetState extends State<_VehicleFormSheet> {
   late final TextEditingController _cvController;
   late final TextEditingController _registrationController;
   late VehicleCategory _category;
+  late Motorization _motorization;
+  TwoWheelerFiscalClass? _twoWheelerClass;
   String? _nameError;
   String? _cvError;
 
@@ -59,6 +65,8 @@ class _VehicleFormSheetState extends State<_VehicleFormSheet> {
     _registrationController =
         TextEditingController(text: initial?.registration ?? '');
     _category = initial?.category ?? VehicleCategory.car;
+    _motorization = initial?.motorization ?? Motorization.unspecified;
+    _twoWheelerClass = initial?.twoWheelerClass;
   }
 
   @override
@@ -87,6 +95,10 @@ class _VehicleFormSheetState extends State<_VehicleFormSheet> {
       category: _category,
       fiscalPowerCv: cv,
       registration: _registrationController.text,
+      motorization: _motorization,
+      // La classe fiscale n'a de sens que pour un deux-roues.
+      twoWheelerClass:
+          _category == VehicleCategory.twoWheeler ? _twoWheelerClass : null,
     ));
   }
 
@@ -140,6 +152,64 @@ class _VehicleFormSheetState extends State<_VehicleFormSheet> {
               selected: {_category},
               onSelectionChanged: (selection) =>
                   setState(() => _category = selection.first),
+            ),
+            if (_category == VehicleCategory.twoWheeler) ...[
+              const SizedBox(height: AppSpacing.m),
+              DropdownButtonFormField<TwoWheelerFiscalClass?>(
+                key: const Key('two-wheeler-class-field'),
+                initialValue: _twoWheelerClass,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Type de deux-roues',
+                  helperText:
+                      'Les barèmes moto et cyclomoteur sont distincts.',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text('Non renseigné'),
+                  ),
+                  DropdownMenuItem(
+                    value: TwoWheelerFiscalClass.motorcycle,
+                    child: Text('Moto (plus de 50 cm³)'),
+                  ),
+                  DropdownMenuItem(
+                    value: TwoWheelerFiscalClass.moped,
+                    child: Text('Cyclomoteur (50 cm³ au plus)'),
+                  ),
+                ],
+                onChanged: (value) =>
+                    setState(() => _twoWheelerClass = value),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.m),
+            DropdownButtonFormField<Motorization>(
+              key: const Key('motorization-field'),
+              initialValue: _motorization,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'Motorisation',
+                helperText:
+                    'Nécessaire pour l’estimation kilométrique indicative.',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: Motorization.unspecified,
+                  child: Text('Non renseignée'),
+                ),
+                DropdownMenuItem(
+                  value: Motorization.electric,
+                  child: Text('Électrique 100 %'),
+                ),
+                DropdownMenuItem(
+                  value: Motorization.other,
+                  child: Text('Autre motorisation'),
+                ),
+              ],
+              onChanged: (value) => setState(
+                  () => _motorization = value ?? Motorization.unspecified),
             ),
             const SizedBox(height: AppSpacing.m),
             TextField(

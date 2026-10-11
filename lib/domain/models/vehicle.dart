@@ -4,6 +4,16 @@ import 'text.dart';
 /// familles de barèmes fiscaux).
 enum VehicleCategory { car, twoWheeler }
 
+/// Motorisation (KM-013) : distingue uniquement ce que le barème fiscal
+/// distingue. [unspecified] est l'état par défaut — on ne suppose JAMAIS
+/// qu'un véhicule existant est thermique.
+enum Motorization { electric, other, unspecified }
+
+/// Classe fiscale d'un deux-roues (KM-013) : le barème « moto » (> 50 cm³)
+/// et le barème « cyclomoteur » (≤ 50 cm³) sont distincts — null tant que
+/// l'utilisateur n'a pas précisé, et alors aucune estimation.
+enum TwoWheelerFiscalClass { motorcycle, moped }
+
 /// Un véhicule de l'utilisateur.
 ///
 /// Le véhicule principal n'est PAS un drapeau ici : il est désigné par
@@ -18,6 +28,8 @@ class Vehicle {
     required this.category,
     this.fiscalPowerCv,
     String? registration,
+    this.motorization = Motorization.unspecified,
+    this.twoWheelerClass,
     this.archivedAt,
   })  : name = name.trim(),
         registration = cleanText(registration) {
@@ -45,6 +57,12 @@ class Vehicle {
 
   final String? registration;
 
+  /// Motorisation fiscale. Jamais devinée : non renseignée par défaut.
+  final Motorization motorization;
+
+  /// Classe fiscale si deux-roues ; null = à compléter (pas d'estimation).
+  final TwoWheelerFiscalClass? twoWheelerClass;
+
   final DateTime? archivedAt;
 
   bool get isArchived => archivedAt != null;
@@ -56,6 +74,8 @@ class Vehicle {
         category: category,
         fiscalPowerCv: fiscalPowerCv,
         registration: registration,
+        motorization: motorization,
+        twoWheelerClass: twoWheelerClass,
         archivedAt: at,
       );
 }
