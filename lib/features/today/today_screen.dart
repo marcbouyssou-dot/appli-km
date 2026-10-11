@@ -6,7 +6,6 @@ import '../../app/providers.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/placeholder_card.dart';
 import '../day/day_view.dart';
-import 'favorites_section.dart';
 
 /// Aujourd'hui : la vue de journée partagée, datée du jour courant,
 /// enrichie des favoris (geste quotidien rapide).
@@ -32,7 +31,6 @@ class TodayScreen extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.xl),
       ],
-      afterTotal: const FavoritesSection(),
     );
   }
 }

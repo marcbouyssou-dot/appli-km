@@ -4,28 +4,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
-import '../../app/providers.dart';
+import '../../domain/models/civil_date.dart';
 import '../day/day_controller.dart';
 import 'favorite_form_sheet.dart';
 import 'favorites_controller.dart';
 import 'manage_favorites_screen.dart';
 
-/// Section « Trajets favoris » de l'écran Aujourd'hui.
+/// Section « Trajets favoris », disponible sur TOUTE journée éditable
+/// (aujourd'hui comme journée passée).
 ///
 /// Un SEUL tap sur toute la ligne d'un favori ajoute immédiatement ses
-/// kilomètres à la journée (pas de confirmation, pas d'écran intermédiaire).
-/// La gestion (créer/modifier/supprimer/réordonner) vit sur un écran dédié.
+/// kilomètres à la journée [date] — explicitement celle-ci, jamais la date
+/// courante implicite. La liste des favoris reste GLOBALE : la gestion
+/// (créer/modifier/supprimer/réordonner) n'est jamais rattachée à la date
+/// consultée.
 class FavoritesSection extends ConsumerWidget {
-  const FavoritesSection({super.key});
+  const FavoritesSection({super.key, required this.date});
+
+  /// Journée cible des taps : le Trip créé porte cette date.
+  final CivilDate date;
 
   Future<void> _useFavorite(
     BuildContext context,
     WidgetRef ref,
     FavoriteTrip favorite,
   ) async {
-    final today = ref.read(todayDateProvider)();
     await ref
-        .read(dayControllerProvider(today).notifier)
+        .read(dayControllerProvider(date).notifier)
         .addTripFromFavorite(favorite);
     if (!context.mounted) return;
     // Feedback bref, remplacé au tap suivant : n'empile jamais.

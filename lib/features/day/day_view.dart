@@ -5,6 +5,7 @@ import '../../domain/models/civil_date.dart';
 import '../../domain/models/trip.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
+import '../today/favorites_section.dart';
 import 'day_controller.dart';
 import 'editable_day_total.dart';
 import 'trip_form_sheet.dart';
@@ -15,19 +16,17 @@ import 'trip_form_sheet.dart';
 /// implicitement « maintenant ».
 ///
 /// [header] : widgets affichés en tête de liste (titre, date…).
-/// [afterTotal] : contenu optionnel inséré sous le compteur (ex. favoris
-/// sur Aujourd'hui — volontairement absent des journées passées).
+/// Les trajets favoris (liste globale) sont proposés sur TOUTE journée :
+/// un tap crée un Trip daté de [date].
 class DayView extends ConsumerWidget {
   const DayView({
     super.key,
     required this.date,
     this.header = const <Widget>[],
-    this.afterTotal,
   });
 
   final CivilDate date;
   final List<Widget> header;
-  final Widget? afterTotal;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,11 +38,7 @@ class DayView extends ConsumerWidget {
         message: '$error',
         onRetry: () => ref.invalidate(dayControllerProvider(date)),
       ),
-      data: (day) => _DayContent(
-        day: day,
-        header: header,
-        afterTotal: afterTotal,
-      ),
+      data: (day) => _DayContent(day: day, header: header),
     );
   }
 }
@@ -84,15 +79,10 @@ class _ErrorView extends StatelessWidget {
 }
 
 class _DayContent extends ConsumerWidget {
-  const _DayContent({
-    required this.day,
-    required this.header,
-    required this.afterTotal,
-  });
+  const _DayContent({required this.day, required this.header});
 
   final DayState day;
   final List<Widget> header;
-  final Widget? afterTotal;
 
   DayController _controller(WidgetRef ref) =>
       ref.read(dayControllerProvider(day.date).notifier);
@@ -207,7 +197,8 @@ class _DayContent extends ConsumerWidget {
         EditableDayTotal(date: day.date, totalKm: day.totalKm),
         const SizedBox(height: AppSpacing.l),
 
-        ?afterTotal,
+        // Favoris : ajout en un toucher, Trip daté de CETTE journée.
+        FavoritesSection(date: day.date),
 
         FilledButton.tonalIcon(
           onPressed: () => _addTrip(context, ref),

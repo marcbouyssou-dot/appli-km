@@ -6,9 +6,11 @@ import 'package:mes_km/app.dart';
 import 'package:mes_km/app/providers.dart';
 import 'package:mes_km/data/local/app_database.dart';
 import 'package:mes_km/data/local/sembast_day_extra_repository.dart';
+import 'package:mes_km/data/local/sembast_favorite_trip_repository.dart';
 import 'package:mes_km/data/local/sembast_trip_repository.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
+import 'package:mes_km/domain/models/favorite_trip.dart';
 import 'package:mes_km/domain/models/trip.dart';
 import 'package:mes_km/features/day/editable_day_total.dart';
 import 'package:sembast/sembast_memory.dart' hide Finder;
@@ -183,6 +185,91 @@ void main() {
       findsNothing,
     );
     expect(find.text('0 km'), findsOneWidget); // total mensuel recalculé
+  });
+
+  group('favoris sur journée passée (UI)', () {
+    Future<void> seedFavorite(WidgetTester tester) async {
+      await tester.runAsync(
+          () => SembastFavoriteTripRepository(database.db).put(FavoriteTrip(
+                id: 'fav-1',
+                label: 'Cabinet ↔ EHPAD',
+                distanceKm: 24,
+                sortOrder: 0,
+              )));
+    }
+
+    Future<void> flushSnackBar(WidgetTester tester) async {
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        'favori visible sur le 5 octobre ; deux taps => +48 daté du 5 ; '
+        'extra inchangé ; retour calendrier rafraîchi', (tester) async {
+      await seedFavorite(tester);
+      await seedExtra(tester, CivilDate(2026, 10, 5), 33);
+      await pumpOnCalendar(tester);
+
+      await tester.tap(cell('2026-10-05'));
+      await tester.pumpAndSettle();
+
+      // Même section favoris que sur Aujourd'hui, au-dessus d'Ajouter.
+      expect(find.text('Trajets favoris'), findsOneWidget);
+      expect(find.text('+24 km'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('favorite-fav-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('favorite-fav-1')));
+      await tester.pumpAndSettle();
+      await flushSnackBar(tester);
+
+      expect(totalFieldText(tester), '81'); // 33 + 24 + 24
+      expect(find.text('33 km'), findsOneWidget); // extra intact
+      final trips = await tester.runAsync(() =>
+          SembastTripRepository(database.db)
+              .getByDate(CivilDate(2026, 10, 5)));
+      expect(trips, hasLength(2));
+      final todayTrips = await tester.runAsync(
+          () => SembastTripRepository(database.db).getByDate(today));
+      expect(todayTrips, isEmpty, reason: 'rien créé aujourd’hui');
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: cell('2026-10-05'), matching: find.text('81 km')),
+        findsOneWidget,
+      );
+      expect(find.text('81 km'), findsNWidgets(2)); // cellule + total du mois
+    });
+
+    testWidgets(
+        'favori créé depuis une journée passée : global, visible sur '
+        'Aujourd’hui', (tester) async {
+      await pumpOnCalendar(tester);
+
+      await tester.tap(cell('2026-10-05'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Créer un trajet favori'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.widgetWithText(TextField, 'Nom du favori'), 'Dépôt');
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
+        '7,5',
+      );
+      await tester.tap(find.text('Créer le favori'));
+      await tester.pumpAndSettle();
+      expect(find.text('Dépôt'), findsOneWidget);
+
+      // Retour calendrier puis Aujourd'hui : même liste globale.
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.today_outlined));
+      await tester.pumpAndSettle();
+      expect(find.text('Dépôt'), findsOneWidget);
+      expect(find.text('+7,5 km'), findsOneWidget);
+    });
   });
 
   testWidgets('navigation mois précédent/suivant + retour aujourd’hui',
