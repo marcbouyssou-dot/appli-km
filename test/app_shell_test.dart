@@ -5,7 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:mes_km/app.dart';
 import 'package:mes_km/app/providers.dart';
 import 'package:mes_km/data/local/app_database.dart';
-import 'package:sembast/sembast_memory.dart';
+import 'package:sembast/sembast_memory.dart' hide Finder;
 
 void main() {
   setUpAll(() async {
@@ -70,6 +70,38 @@ void main() {
     expect(find.text('Réglages'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.today_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('km aujourd’hui'), findsOneWidget);
+  });
+
+  testWidgets(
+      'viewport iPhone : chaque destination répond à un tap sur son libellé',
+      (tester) async {
+    // Dimensions logiques d'un iPhone récent.
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await pumpApp(tester);
+
+    Finder navLabel(String label) => find.descendant(
+          of: find.byType(NavigationBar),
+          matching: find.text(label),
+        );
+
+    await tester.tap(navLabel('Calendrier'));
+    await tester.pumpAndSettle();
+    expect(find.text('Le calendrier de vos kilomètres'), findsOneWidget);
+
+    await tester.tap(navLabel('Statistiques'));
+    await tester.pumpAndSettle();
+    expect(find.text('Vos statistiques kilométriques'), findsOneWidget);
+
+    await tester.tap(navLabel('Plus'));
+    await tester.pumpAndSettle();
+    expect(find.text('Réglages'), findsOneWidget);
+
+    await tester.tap(navLabel('Aujourd’hui'));
     await tester.pumpAndSettle();
     expect(find.text('km aujourd’hui'), findsOneWidget);
   });

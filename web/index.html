@@ -10,7 +10,9 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- user-scalable=no : supprime les heuristiques de double-tap/zoom de
+       Safari iOS qui retardent les taps (~300 ms) et décalent le rendu. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="description" content="Mes Km — suivi local des kilomètres professionnels.">
 
   <!-- PWA / iOS -->
@@ -33,11 +35,25 @@
   <!-- Fond immédiat pendant le chargement du moteur Flutter :
        évite l'écran blanc prolongé, suit le mode clair/sombre système. -->
   <style>
+    /* Page verrouillée : sur Safari iOS, le focus d'un champ fait défiler
+       la page (scroll-into-view) et le décalage peut persister après la
+       fermeture du clavier — les taps atterrissent alors à côté des
+       éléments (navigation basse « morte », imprécision). position:fixed +
+       overflow:hidden empêchent tout défilement de la page hôte ;
+       touch-action: manipulation élimine le délai de tap restant. */
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: manipulation;
       background-color: #F9F9FF;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
     }
     #splash {
       position: fixed;

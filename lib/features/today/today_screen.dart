@@ -152,15 +152,7 @@ class _TodayView extends ConsumerWidget {
         const SizedBox(height: AppSpacing.xl),
 
         // Total du jour, toujours dérivé du domaine, directement éditable.
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: AppSpacing.xxl,
-              horizontal: AppSpacing.xl,
-            ),
-            child: EditableDayTotal(totalKm: today.totalKm),
-          ),
-        ),
+        EditableDayTotal(totalKm: today.totalKm),
         const SizedBox(height: AppSpacing.l),
 
         FilledButton.tonalIcon(
@@ -238,7 +230,8 @@ class _TodayView extends ConsumerWidget {
                 ),
               ),
               subtitle: const Text(
-                'Kilomètres non détaillés (via « Saisir le total du jour »).',
+                'Kilomètres non détaillés — s’ajustent en modifiant '
+                'le total du jour.',
               ),
             ),
           ),

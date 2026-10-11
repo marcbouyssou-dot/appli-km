@@ -10,6 +10,9 @@ import 'today_controller.dart';
 /// Clé du champ du total du jour (ciblage dans les tests).
 const dayTotalFieldKey = Key('day-total-field');
 
+/// Clé de la carte tactile entière du total du jour.
+const dayTotalCardKey = Key('day-total-card');
+
 /// La grande valeur du jour, directement éditable :
 /// toucher → clavier décimal → saisir → terminé (focus perdu ou « OK »).
 ///
@@ -108,44 +111,67 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
     }
   }
 
+  /// Entrée en édition depuis n'importe quel point de la carte :
+  /// focus immédiat (la sélection intégrale suit via _onFocusChanged).
+  void _activateEditing() {
+    if (!_focusNode.hasFocus) {
+      _focusNode.requestFocus();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        TextField(
-          key: dayTotalFieldKey,
-          controller: _controller,
-          focusNode: _focusNode,
-          textAlign: TextAlign.center,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _focusNode.unfocus(),
-          style: theme.textTheme.displayLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: theme.colorScheme.primary,
+    // TOUTE la carte est tactile : pas besoin de viser les chiffres.
+    return Card(
+      key: dayTotalCardKey,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: _activateEditing,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.xxl,
+            horizontal: AppSpacing.xl,
           ),
-          decoration: const InputDecoration(
-            isCollapsed: true,
-            border: InputBorder.none,
+          child: Column(
+            children: [
+              TextField(
+                key: dayTotalFieldKey,
+                controller: _controller,
+                focusNode: _focusNode,
+                textAlign: TextAlign.center,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _focusNode.unfocus(),
+                style: theme.textTheme.displayLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.primary,
+                ),
+                decoration: const InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s),
+              Text(
+                'km aujourd’hui',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s),
+              Text(
+                'Touchez la carte pour modifier le total',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: AppSpacing.s),
-        Text(
-          'km aujourd’hui',
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.s),
-        Text(
-          'Touchez la valeur pour la modifier',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

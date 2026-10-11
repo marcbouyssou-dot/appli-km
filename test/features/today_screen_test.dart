@@ -108,6 +108,80 @@ void main() {
     expect(totalFieldHasFocus(tester), isTrue);
   });
 
+  testWidgets(
+      'UN SEUL tap au BORD de la carte (pas sur les chiffres) ouvre '
+      'l’édition et sélectionne la valeur', (tester) async {
+    await seedExtra(tester, 33);
+    await pumpApp(tester);
+    expect(totalFieldHasFocus(tester), isFalse);
+
+    final cardRect = tester.getRect(find.byKey(dayTotalCardKey));
+    await tester.tapAt(cardRect.topLeft + const Offset(12, 12));
+    await tester.pumpAndSettle();
+
+    expect(totalFieldHasFocus(tester), isTrue);
+    // Valeur entièrement sélectionnée : la première frappe remplace tout.
+    final field =
+        tester.widget<TextField>(find.byKey(dayTotalFieldKey));
+    final selection = field.controller!.selection;
+    expect(selection.start, 0);
+    expect(selection.end, field.controller!.text.length);
+  });
+
+  testWidgets('RÉGRESSION recette : 33 km persistés => 0 via édition directe',
+      (tester) async {
+    await seedExtra(tester, 33);
+    await pumpApp(tester);
+    expect(find.text('33'), findsOneWidget);
+
+    // Tap sur la carte (zone large), puis 0.
+    await tester.tap(find.byKey(dayTotalCardKey));
+    await tester.pumpAndSettle();
+    await editTotal(tester, '0');
+
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('Autres kilomètres'), findsNothing);
+    final stored = await tester.runAsync(
+        () => SembastDayExtraRepository(database.db).getForDate(day));
+    expect(stored, isNull);
+  });
+
+  testWidgets('la navigation basse fonctionne encore après édition du total',
+      (tester) async {
+    await pumpApp(tester);
+
+    await editTotal(tester, '87');
+    expect(find.text('87'), findsOneWidget);
+
+    await tester.tap(find.text('Calendrier'));
+    await tester.pumpAndSettle();
+    expect(find.text('Le calendrier de vos kilomètres'), findsOneWidget);
+
+    await tester.tap(find.text('Statistiques'));
+    await tester.pumpAndSettle();
+    expect(find.text('Vos statistiques kilométriques'), findsOneWidget);
+
+    await tester.tap(find.text('Plus'));
+    await tester.pumpAndSettle();
+    expect(find.text('Véhicules'), findsOneWidget);
+
+    await tester.tap(find.text('Aujourd’hui').last);
+    await tester.pumpAndSettle();
+    expect(find.text('87'), findsOneWidget);
+  });
+
+  testWidgets('le texte obsolète de l’ancienne feuille a disparu',
+      (tester) async {
+    await seedExtra(tester, 45);
+    await pumpApp(tester);
+
+    expect(find.text('Autres kilomètres'), findsOneWidget);
+    expect(
+      find.textContaining('Saisir le total du jour'),
+      findsNothing,
+    );
+  });
+
   testWidgets('saisie directe : 87 affiché puis persisté', (tester) async {
     await pumpApp(tester);
 
