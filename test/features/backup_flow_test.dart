@@ -128,6 +128,8 @@ void main() {
 
     expect(gateway.savedName,
         matches(r'^MesKm-Sauvegarde-\d{4}-\d{2}-\d{2}\.kmbackup$'));
+    expect(gateway.savedName, isNot(endsWith('.json')),
+        reason: 'jamais .kmbackup.json');
     expect(gateway.savedContent, contains('"schemaVersion": 1'));
     expect(gateway.savedContent, contains('TEST BACKUP'));
     expect(find.textContaining('Dernière sauvegarde exportée'),

@@ -5,6 +5,7 @@ library;
 // Le partage/sélecteur de fichier natif ne peut pas être automatisé en
 // headless : il reste couvert par la recette humaine iPhone.
 
+import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +22,46 @@ import 'package:mes_km/domain/models/trip.dart';
 import 'package:web/web.dart' as web;
 
 void main() {
+  test(
+      'fichier utilisateur : nom .kmbackup EXACT, MIME octet-stream '
+      '(pas de prévisualisation JSON Safari), contenu JSON importable',
+      () async {
+    const fileName = 'MesKm-Sauvegarde-2026-10-11.kmbackup';
+    final json = encodeBackup(
+      exportedAt: DateTime.utc(2026, 10, 11),
+      trips: const [],
+      dayExtras: const [],
+      favorites: const [],
+      vehicles: const [],
+      vacationPeriods: const [],
+      settings: (await (() async {
+        final db =
+            await openMesKmDatabaseWeb(name: 'mime_test.db');
+        final s = (await BackupService(db.db).snapshot()).settings;
+        await db.close();
+        return s;
+      })()),
+    );
+
+    final file = WebBackupFileGateway.buildBackupFile(
+      fileName: fileName,
+      content: json,
+    );
+
+    expect(file.name, fileName);
+    expect(file.name, endsWith('.kmbackup'));
+    expect(file.name, isNot(contains('.kmbackup.json')));
+    expect(file.type, 'application/octet-stream',
+        reason: 'application/json déclenche la prévisualisation Safari '
+            'et l’ajout de .json au nom');
+
+    // Round-trip : le contenu relu reste du JSON de sauvegarde valide,
+    // indépendamment du MIME et de l'extension.
+    final text = (await file.text().toDart).toDart;
+    final content = decodeBackup(text);
+    expect(content.trips, isEmpty);
+  });
+
   test(
       'passerelle réelle : saveBackupFile n’échoue JAMAIS, même sans '
       'Web Share API (cas iPhone « canShare undefined »)', () async {

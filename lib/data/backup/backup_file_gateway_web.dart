@@ -16,16 +16,32 @@ import 'share_policy.dart';
 class WebBackupFileGateway implements BackupFileGateway {
   const WebBackupFileGateway();
 
+  /// Construit le FICHIER utilisateur de sauvegarde.
+  ///
+  /// FORMAT INTERNE = JSON versionné ; FORMAT UTILISATEUR = .kmbackup.
+  /// MIME `application/octet-stream` et non `application/json` : Safari iOS
+  /// traite un blob JSON comme un document à PRÉVISUALISER et ajoute
+  /// « .json » au nom (bug recette KM-008B : « .kmbackup.json », écran
+  /// « Ouvrir dans… ») ; en octet-stream, c'est un fichier à
+  /// enregistrer/partager et le nom reste exact. L'import, lui, analyse le
+  /// contenu sans jamais dépendre du MIME ni de l'extension.
+  static web.File buildBackupFile({
+    required String fileName,
+    required String content,
+  }) {
+    return web.File(
+      [content.toJS].toJS,
+      fileName,
+      web.FilePropertyBag(type: 'application/octet-stream'),
+    );
+  }
+
   @override
   Future<BackupSaveOutcome> saveBackupFile({
     required String fileName,
     required String content,
   }) async {
-    final file = web.File(
-      [content.toJS].toJS,
-      fileName,
-      web.FilePropertyBag(type: 'application/json'),
-    );
+    final file = buildBackupFile(fileName: fileName, content: content);
 
     final navigator = web.window.navigator;
     final shareData = web.ShareData(files: [file].toJS);
@@ -72,7 +88,9 @@ class WebBackupFileGateway implements BackupFileGateway {
   Future<String?> pickBackupFile() async {
     final input = web.HTMLInputElement()
       ..type = 'file'
-      ..accept = '.kmbackup,.json,application/json';
+      // Filtre indicatif seulement : la validation est TOUJOURS faite sur
+      // le contenu, jamais sur l'extension ou le MIME.
+      ..accept = '.kmbackup,.json,application/json,application/octet-stream';
 
     final completer = Completer<String?>();
 
