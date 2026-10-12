@@ -12,7 +12,7 @@
   <meta charset="UTF-8">
   <!-- Zoom utilisateur conservé (accessibilité) : le délai de tap Safari
        est déjà éliminé par touch-action: manipulation + width=device-width,
-       et le décalage post-clavier par le verrouillage du scroll (body fixe). -->
+       et le décalage post-clavier par l'épinglage de scroll plus bas. -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Mes Km — suivi local des kilomètres professionnels.">
 
@@ -24,8 +24,8 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Couleur de l'interface système, cohérente avec le thème V2 -->
-  <meta name="theme-color" content="#F9F9FF" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#121318" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#FBFCFE" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
@@ -52,7 +52,7 @@
       overflow: hidden;
       overscroll-behavior: none;
       touch-action: manipulation;
-      background-color: #F9F9FF;
+      background-color: #FBFCFE;
     }
     #splash {
       position: fixed;
@@ -63,7 +63,7 @@
       font-family: -apple-system, system-ui, sans-serif;
       font-size: 22px;
       font-weight: 700;
-      color: #007AFF;
+      color: #1D5BD8; /* bleu Mes Km (UX-001C) */
       /* Pulsation : l'état de chargement VIVANT est reconnaissable,
          jamais une interface qui semble prête mais morte. */
       animation: splash-pulse 1.2s ease-in-out infinite;
@@ -73,7 +73,7 @@
       50% { opacity: 0.4; }
     }
     @media (prefers-color-scheme: dark) {
-      html, body { background-color: #121318; }
+      html, body { background-color: #111318; }
     }
   </style>
 </head>

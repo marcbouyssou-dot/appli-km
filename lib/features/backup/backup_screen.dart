@@ -212,7 +212,11 @@ class BackupScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
-              'Conservez régulièrement une sauvegarde dans Fichiers, '
+              // UX-008B : conséquence du stockage local, dite une fois,
+              // sans alarmisme — aucun comportement modifié.
+              'Vos données sont stockées uniquement sur cet appareil. '
+              'Supprimer l’application ou ses données de site peut les '
+              'effacer : conservez une sauvegarde récente dans Fichiers, '
               'iCloud Drive ou sur un autre appareil.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,

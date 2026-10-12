@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/build_info.dart';
 import '../../app/providers.dart';
 import '../../domain/models/app_settings.dart';
 import '../../theme/tokens.dart';
@@ -114,6 +115,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Ville',
                       border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  // Identité de build (UX-008B) : discrète, non interactive.
+                  Center(
+                    child: Text(
+                      versionLine(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
                     ),
                   ),
                 ],
