@@ -31,12 +31,14 @@ class MesKmRoadWatermark extends StatelessWidget {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
     // Teinte bleu/turquoise, extrêmement faible ; encore plus en sombre.
+    // Adouci après recette iPhone (UX-001D final polish) : perceptible
+    // quand on le cherche, jamais en concurrence avec le contenu.
     final ink = Color.lerp(
       theme.colorScheme.primary,
       theme.mesKm.mobility,
       0.55,
     )!
-        .withValues(alpha: dark ? 0.05 : 0.07);
+        .withValues(alpha: dark ? 0.03 : 0.04);
 
     return Stack(
       children: [
