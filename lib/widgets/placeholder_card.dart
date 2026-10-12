@@ -55,16 +55,23 @@ class PlaceholderCard extends StatelessWidget {
 
 /// En-tête de page commun : grand titre iOS, aligné à gauche.
 class ScreenTitle extends StatelessWidget {
-  const ScreenTitle(this.title, {super.key});
+  const ScreenTitle(
+    this.title, {
+    super.key,
+    this.topSpacing = AppSpacing.l,
+    this.bottomSpacing = AppSpacing.xl,
+  });
 
   final String title;
+  final double topSpacing;
+  final double bottomSpacing;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: AppSpacing.l,
-        bottom: AppSpacing.xl,
+      padding: EdgeInsets.only(
+        top: topSpacing,
+        bottom: bottomSpacing,
       ),
       child: Text(
         title,

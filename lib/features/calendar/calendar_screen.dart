@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../domain/models/civil_date.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/app_buttons.dart';
+import '../../widgets/brand_header.dart';
+import '../../widgets/road_watermark.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/placeholder_card.dart';
 import '../../widgets/period_selector.dart';
@@ -68,10 +70,17 @@ class _CalendarView extends ConsumerWidget {
     final theme = Theme.of(context);
     final controller = ref.read(calendarControllerProvider.notifier);
 
-    return ListView(
+    return MesKmRoadWatermark(
+      variant: RoadWatermarkVariant.top,
+      child: ListView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
       children: [
-        const ScreenTitle('Calendrier'),
+        const MesKmBrandHeader(),
+        const ScreenTitle(
+          'Calendrier',
+          topSpacing: AppSpacing.s,
+          bottomSpacing: AppSpacing.m,
+        ),
 
         // Navigation mensuelle : sélecteur partagé, chevrons larges.
         PeriodSelector(
@@ -138,6 +147,7 @@ class _CalendarView extends ConsumerWidget {
         ..._buildWeeks(context, theme),
         const SizedBox(height: AppSpacing.xxl),
       ],
+      ),
     );
   }
 

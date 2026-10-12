@@ -6,7 +6,9 @@ import '../../domain/models/vehicle.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/tokens.dart';
 import '../../theme/vehicle_accent.dart';
+import '../../widgets/brand_header.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/road_watermark.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/period_selector.dart';
 import '../../widgets/placeholder_card.dart';
@@ -67,10 +69,17 @@ class _StatisticsView extends ConsumerWidget {
     final delta = stats.previousYearDelta;
     final percent = stats.previousYearPercent;
 
-    return ListView(
+    return MesKmRoadWatermark(
+      variant: RoadWatermarkVariant.top,
+      child: ListView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
       children: [
-        const ScreenTitle('Statistiques'),
+        const MesKmBrandHeader(),
+        const ScreenTitle(
+          'Statistiques',
+          topSpacing: AppSpacing.s,
+          bottomSpacing: AppSpacing.m,
+        ),
 
         // Navigation d'année : sélecteur partagé, chevrons larges.
         PeriodSelector(
@@ -260,6 +269,7 @@ class _StatisticsView extends ConsumerWidget {
         ],
         const SizedBox(height: AppSpacing.xxl),
       ],
+      ),
     );
   }
 }

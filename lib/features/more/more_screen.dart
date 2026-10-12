@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../theme/mes_km_colors.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/brand_header.dart';
 import '../../widgets/placeholder_card.dart';
+import '../../widgets/road_watermark.dart';
 import '../../widgets/section_header.dart';
 import '../backup/backup_screen.dart';
 import '../documents/documents_screen.dart';
@@ -94,10 +96,16 @@ class MoreScreen extends StatelessWidget {
     Widget hairline() =>
         Divider(height: 1, color: theme.colorScheme.outlineVariant);
 
-    return ListView(
+    return MesKmRoadWatermark(
+      child: ListView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
       children: [
-        const ScreenTitle('Plus'),
+        const MesKmBrandHeader(),
+        const ScreenTitle(
+          'Plus',
+          topSpacing: AppSpacing.s,
+          bottomSpacing: AppSpacing.m,
+        ),
 
         const SectionHeader('MES TRAJETS', topSpacing: 0),
         // Gestion GLOBALE des trajets favoris (créer/modifier/supprimer/
@@ -150,6 +158,7 @@ class MoreScreen extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.xxl),
       ],
+      ),
     );
   }
 }

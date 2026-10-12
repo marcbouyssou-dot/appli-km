@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/brand_header.dart';
 import '../../widgets/placeholder_card.dart';
+import '../../widgets/road_watermark.dart';
 import '../day/day_view.dart';
 
 /// Aujourd'hui : la vue de journée partagée, datée du jour courant,
@@ -19,18 +21,25 @@ class TodayScreen extends ConsumerWidget {
     final dateText = DateFormat('EEEE d MMMM yyyy', 'fr_FR')
         .format(today.toDateTime());
 
-    return DayView(
-      date: today,
-      header: [
-        const ScreenTitle('Aujourd’hui'),
-        Text(
-          dateText[0].toUpperCase() + dateText.substring(1),
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+    return MesKmRoadWatermark(
+      child: DayView(
+        date: today,
+        header: [
+          const MesKmBrandHeader(),
+          const ScreenTitle(
+            'Aujourd’hui',
+            topSpacing: AppSpacing.s,
+            bottomSpacing: 0,
           ),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-      ],
+          Text(
+            dateText[0].toUpperCase() + dateText.substring(1),
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.l),
+        ],
+      ),
     );
   }
 }
