@@ -7,10 +7,12 @@ import 'package:mes_km/app/providers.dart';
 import 'package:mes_km/data/local/app_database.dart';
 import 'package:mes_km/data/local/sembast_day_extra_repository.dart';
 import 'package:mes_km/data/local/sembast_trip_repository.dart';
+import 'package:mes_km/data/local/sembast_vacation_repository.dart';
 import 'package:mes_km/data/local/sembast_vehicle_repository.dart';
 import 'package:mes_km/domain/models/civil_date.dart';
 import 'package:mes_km/domain/models/day_extra.dart';
 import 'package:mes_km/domain/models/trip.dart';
+import 'package:mes_km/domain/models/vacation_period.dart';
 import 'package:mes_km/domain/models/vehicle.dart';
 import 'package:mes_km/features/statistics/monthly_bar_chart.dart';
 import 'package:mes_km/widgets/km_format.dart';
@@ -144,6 +146,40 @@ void main() {
     expect(find.text('0 km'), findsWidgets);
     expect(find.text('Aucun kilomètre enregistré en 2024.'), findsOneWidget);
     expect(find.textContaining('vs 2023'), findsNothing);
+  });
+
+  testWidgets(
+      'UX-005B : plus de grand titre « Statistiques » dans le contenu '
+      '(label d’onglet conservé) ; « Jours de congé » vit dans la zone KPI',
+      (tester) async {
+    await seedData(tester);
+    await tester.runAsync(() => SembastVacationRepository(database.db)
+        .put(VacationPeriod(
+            id: 'p-1',
+            startDate: CivilDate(2026, 8, 3),
+            endDate: CivilDate(2026, 8, 5))));
+    await pumpOnStats(tester);
+
+    expect(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.text('Statistiques'),
+      ),
+      findsNothing,
+    );
+    expect(
+        find.widgetWithText(NavigationBar, 'Statistiques'), findsOneWidget);
+    expect(find.text('2026'), findsOneWidget); // l'année = premier titre
+
+    // Congés : même texte/valeur, désormais AVANT le graphique (zone KPI).
+    final vacationY =
+        tester.getTopLeft(find.text('Jours de congé : 3')).dy;
+    final chartTitleY =
+        tester.getTopLeft(find.text('ÉVOLUTION MENSUELLE')).dy;
+    expect(vacationY, lessThan(chartTitleY),
+        reason: 'plus d’emplacement isolé en fin d’écran');
+    expect(find.text('Jours avec km'), findsOneWidget);
+    expect(find.text('Moyenne / jour actif'), findsOneWidget);
   });
 
   testWidgets('petit iPhone (320x568) : aucun overflow', (tester) async {

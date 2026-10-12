@@ -11,7 +11,6 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/road_watermark.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/period_selector.dart';
-import '../../widgets/placeholder_card.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/status_banner.dart';
 import '../vehicles/vehicles_screen.dart';
@@ -75,11 +74,9 @@ class _StatisticsView extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
       children: [
         const MesKmBrandHeader(),
-        const ScreenTitle(
-          'Statistiques',
-          topSpacing: AppSpacing.s,
-          bottomSpacing: AppSpacing.m,
-        ),
+        const SizedBox(height: AppSpacing.s),
+        // UX-005B : « Statistiques » est porté par l'onglet actif — l'année
+        // est le premier titre fonctionnel (règle UX-002B/004B).
 
         // Navigation d'année : sélecteur partagé, chevrons larges.
         PeriodSelector(
@@ -193,6 +190,18 @@ class _StatisticsView extends ConsumerWidget {
             ),
           ],
         ),
+        if (stats.vacationDays > 0) ...[
+          const SizedBox(height: AppSpacing.s),
+          // Information secondaire de la zone KPI (déplacée — UX-005B) :
+          // même texte, même calcul, même condition d'affichage.
+          Text(
+            'Jours de congé : ${stats.vacationDays}',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.l),
         Divider(height: 1, color: theme.colorScheme.outlineVariant),
 
@@ -258,15 +267,6 @@ class _StatisticsView extends ConsumerWidget {
         const SectionHeader('ESTIMATION KILOMÉTRIQUE'),
         _FiscalEstimationSection(stats: stats),
 
-        if (stats.vacationDays > 0) ...[
-          const SizedBox(height: AppSpacing.l),
-          Text(
-            'Jours de congé : ${stats.vacationDays}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
         const SizedBox(height: AppSpacing.xxl),
       ],
       ),
