@@ -115,8 +115,12 @@ void main() {
       expect(h, contains('color: #1D5BD8'));
       expect(h, isNot(contains('#007AFF')));
       expect(h, isNot(contains('#F9F9FF')));
-      // Invariants premier-toucher / démarrage (KM-006C/D) :
-      expect(h, contains('timeoutMillis: 800'));
+      // Invariants premier-toucher / démarrage :
+      // UX-008C — plus de serviceWorkerSettings (le SW Flutter n'est
+      // qu'un désinstalleur depuis 3.35+) ; notre sw.js est enregistré.
+      expect(h, isNot(contains('serviceWorkerVersion')));
+      expect(h, contains('_flutter.loader.load();'));
+      expect(h, contains("serviceWorker.register('sw.js')"));
       expect(h, contains('flutter-first-frame'));
       expect(h, contains('splash-pulse'));
       expect(h, isNot(contains('position: fixed;\n      body')));

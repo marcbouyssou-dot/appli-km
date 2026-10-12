@@ -103,23 +103,27 @@
         window.visualViewport.addEventListener('resize', pin);
       }
     })();
+
+    // Service worker Mes Km (UX-008C) : précache du shell => lancement
+    // HORS LIGNE de la PWA installée. (Flutter 3.35+ ne fournit plus de
+    // SW de cache ; voir tool/sw_template.js.) Enregistré après le
+    // chargement pour ne jamais retarder le premier rendu.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js');
+      });
+    }
   </script>
-  <!-- Bootstrap personnalisé : le loader Flutter ATTEND par défaut
-       l'activation/mise à jour du service worker (plafond 4000 ms) avant
-       même de télécharger le moteur — principale latence au lancement de
-       la PWA (surtout après une mise à jour de version). On plafonne cette
-       attente à 800 ms : au-delà, l'app démarre immédiatement (réseau ou
-       cache HTTP) et le service worker finit de s'activer en arrière-plan,
-       sans perdre le fonctionnement hors ligne des lancements suivants. -->
+  <!-- Bootstrap : démarrage immédiat du moteur, SANS serviceWorkerSettings.
+       Diagnostic UX-008C : depuis Flutter 3.35+, flutter_service_worker.js
+       n'est qu'un DÉSINSTALLEUR — l'enregistrer via le loader n'apportait
+       aucun cache et entrait en conflit avec notre sw.js de précache
+       (enregistré plus haut). L'ancienne attente plafonnée à 800 ms
+       (KM-006C) n'a plus d'objet : plus d'attente du tout. -->
   <script>
     {{flutter_js}}
     {{flutter_build_config}}
-    _flutter.loader.load({
-      serviceWorkerSettings: {
-        serviceWorkerVersion: {{flutter_service_worker_version}},
-        timeoutMillis: 800,
-      },
-    });
+    _flutter.loader.load();
   </script>
 </body>
 </html>

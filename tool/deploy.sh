@@ -37,7 +37,7 @@ short_sha="$(git rev-parse --short HEAD)"
 echo "== Mes Km deploy : main@$short_sha =="
 
 flutter pub get
-flutter build web --dart-define=MESKM_GIT_SHA="$short_sha"
+tool/build_web.sh "$short_sha"
 
 netlify deploy --prod --dir build/web --site "$SITE_ID" \
   --message "main@$short_sha"
