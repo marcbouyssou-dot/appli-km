@@ -161,6 +161,7 @@ void main() {
         find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
         km,
       );
+      await tester.pump(); // bouton actif (UX-003B1)
       await tester.tap(find.text('Ajouter'));
       await tester.pumpAndSettle();
     }
@@ -260,6 +261,7 @@ void main() {
         find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
         '7,5',
       );
+      await tester.pump(); // bouton actif (UX-003B1)
       await tester.tap(find.text('Créer le favori'));
       await tester.pumpAndSettle();
       expect(find.text('Dépôt'), findsOneWidget);
@@ -297,6 +299,7 @@ void main() {
       find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
       '72',
     );
+    await tester.pump(); // bouton actif (UX-003B1)
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
 

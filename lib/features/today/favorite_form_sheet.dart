@@ -91,6 +91,8 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
   void initState() {
     super.initState();
     final initial = widget.initial;
+    // Garde UX précoce (UX-003B1) : l'état du bouton suit la saisie.
+    _requiredListener = () => setState(() {});
     _vehicleId = initial?.vehicleId;
     // Véhicule archivé référencé : on revient à « Automatique » et
     // l'utilisateur corrige explicitement (jamais de Trip archivé caché).
@@ -107,10 +109,23 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
         TextEditingController(text: initial?.destination ?? '');
     _purposeController = TextEditingController(text: initial?.purpose ?? '');
     _defaultRoundTrip = initial?.defaultRoundTrip ?? false;
+    _labelController.addListener(_requiredListener);
+    _distanceController.addListener(_requiredListener);
+  }
+
+  late final VoidCallback _requiredListener;
+
+  /// Mêmes critères syntaxiques que le submit — rien de métier dupliqué.
+  bool get _canSubmit {
+    if (_labelController.text.trim().isEmpty) return false;
+    final distance = parseKmInput(_distanceController.text);
+    return distance != null && distance > 0;
   }
 
   @override
   void dispose() {
+    _labelController.removeListener(_requiredListener);
+    _distanceController.removeListener(_requiredListener);
     _labelController.dispose();
     _distanceController.dispose();
     _originController.dispose();
@@ -161,7 +176,7 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
       title: isEditing ? 'Modifier le favori' : 'Nouveau trajet favori',
       help: 'Disponible sur toutes les journées.',
       primaryLabel: isEditing ? 'Enregistrer' : 'Créer le favori',
-      onPrimary: _submit,
+      onPrimary: _canSubmit ? _submit : null,
       children: [
             TextField(
               controller: _labelController,
@@ -217,6 +232,7 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Départ',
+                    isDense: true,
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -227,6 +243,7 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Destination',
+                    isDense: true,
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -249,6 +266,7 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
                   textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                     labelText: 'Motif',
+                    isDense: true,
                     border: OutlineInputBorder(),
                   ),
                 ),

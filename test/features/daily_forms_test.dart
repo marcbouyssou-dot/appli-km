@@ -151,6 +151,7 @@ void main() {
       await tester.enterText(field('Nom du favori'), 'Travail');
       await tester.enterText(
           field('Distance comptabilisée (km)'), '70');
+      await tester.pump(); // le bouton passe à l'état actif
       await tester.tap(find.text('Créer le favori'));
       await tester.pumpAndSettle();
 
@@ -201,6 +202,83 @@ void main() {
     });
   });
 
+  group('ACTIVATION DU BOUTON (UX-003B1)', () {
+    bool enabled(WidgetTester tester, String label) =>
+        tester
+            .widget<FilledButton>(find.ancestor(
+                of: find.text(label),
+                matching: find.byType(FilledButton)))
+            .onPressed !=
+        null;
+
+    testWidgets(
+        'trajet : distance vide => Ajouter désactivé ; distance valide => '
+        'actif ; invalide => désactivé', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Ajouter un trajet'));
+      await tester.pumpAndSettle();
+
+      expect(enabled(tester, 'Ajouter'), isFalse,
+          reason: 'jamais un bouton qui paraît actif à vide');
+
+      await tester.enterText(
+          field('Distance comptabilisée (km)'), '42');
+      await tester.pump();
+      expect(enabled(tester, 'Ajouter'), isTrue);
+
+      await tester.enterText(
+          field('Distance comptabilisée (km)'), 'abc');
+      await tester.pump();
+      expect(enabled(tester, 'Ajouter'), isFalse);
+    });
+
+    testWidgets(
+        'favori : vide / nom seul / distance seule => désactivé ; '
+        'nom + distance valide => actif', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Créer un trajet favori'));
+      await tester.pumpAndSettle();
+
+      expect(enabled(tester, 'Créer le favori'), isFalse);
+
+      await tester.enterText(field('Nom du favori'), 'Travail');
+      await tester.pump();
+      expect(enabled(tester, 'Créer le favori'), isFalse,
+          reason: 'nom seul : distance encore requise');
+
+      await tester.enterText(field('Nom du favori'), '');
+      await tester.enterText(
+          field('Distance comptabilisée (km)'), '70');
+      await tester.pump();
+      expect(enabled(tester, 'Créer le favori'), isFalse,
+          reason: 'distance seule : nom encore requis');
+
+      await tester.enterText(field('Nom du favori'), 'Travail');
+      await tester.pump();
+      expect(enabled(tester, 'Créer le favori'), isTrue);
+    });
+
+    testWidgets(
+        'édition : pré-rempli => Enregistrer actif ; requis vidé => '
+        'désactivé', (tester) async {
+      await tester.runAsync(() => SembastTripRepository(database.db).put(Trip(
+            id: 't-e',
+            date: today,
+            distanceKm: 24,
+            createdAt: DateTime.utc(2026, 10, 12, 9),
+          )));
+      await pumpApp(tester);
+      await tester.tap(find.text('24 km'));
+      await tester.pumpAndSettle();
+
+      expect(enabled(tester, 'Enregistrer'), isTrue);
+      await tester.enterText(
+          field('Distance comptabilisée (km)'), '');
+      await tester.pump();
+      expect(enabled(tester, 'Enregistrer'), isFalse);
+    });
+  });
+
   group('CLAVIER / PETIT ÉCRAN', () {
     testWidgets(
         'clavier ouvert : l’action épinglée reste visible et actionnable',
@@ -229,6 +307,7 @@ void main() {
 
       await tester.enterText(
           field('Distance comptabilisée (km)'), '42');
+      await tester.pump(); // le bouton passe à l'état actif
       await tester.tap(button);
       await tester.pumpAndSettle();
       tester.view.resetViewInsets;

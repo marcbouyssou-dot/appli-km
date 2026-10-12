@@ -85,6 +85,8 @@ class _TripFormSheetState extends State<_TripFormSheet> {
   void initState() {
     super.initState();
     final initial = widget.initial;
+    // Garde UX précoce (UX-003B1) : l'état du bouton suit la saisie.
+    _distanceListener = () => setState(() {});
     _vehicleId =
         initial != null ? initial.vehicleId : widget.defaultVehicleId;
     _distanceController = TextEditingController(
@@ -97,10 +99,20 @@ class _TripFormSheetState extends State<_TripFormSheet> {
         TextEditingController(text: initial?.destination ?? '');
     _purposeController = TextEditingController(text: initial?.purpose ?? '');
     _isRoundTrip = initial?.isRoundTrip ?? false;
+    _distanceController.addListener(_distanceListener);
+  }
+
+  late final VoidCallback _distanceListener;
+
+  /// Même critère syntaxique que le submit — aucune règle métier dupliquée.
+  bool get _canSubmit {
+    final distance = parseKmInput(_distanceController.text);
+    return distance != null && distance > 0;
   }
 
   @override
   void dispose() {
+    _distanceController.removeListener(_distanceListener);
     _distanceController.dispose();
     _originController.dispose();
     _destinationController.dispose();
@@ -146,7 +158,7 @@ class _TripFormSheetState extends State<_TripFormSheet> {
     return FormSheetScaffold(
       title: isEditing ? 'Modifier le trajet' : 'Ajouter un trajet',
       primaryLabel: isEditing ? 'Enregistrer' : 'Ajouter',
-      onPrimary: _submit,
+      onPrimary: _canSubmit ? _submit : null,
       children: [
         TextField(
           controller: _distanceController,
@@ -189,6 +201,7 @@ class _TripFormSheetState extends State<_TripFormSheet> {
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Départ',
+                isDense: true,
                 border: OutlineInputBorder(),
               ),
             ),
@@ -199,6 +212,7 @@ class _TripFormSheetState extends State<_TripFormSheet> {
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Destination',
+                isDense: true,
                 border: OutlineInputBorder(),
               ),
             ),
@@ -220,6 +234,7 @@ class _TripFormSheetState extends State<_TripFormSheet> {
               textInputAction: TextInputAction.done,
               decoration: const InputDecoration(
                 labelText: 'Motif',
+                isDense: true,
                 border: OutlineInputBorder(),
               ),
             ),

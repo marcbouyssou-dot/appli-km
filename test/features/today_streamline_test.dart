@@ -137,6 +137,7 @@ void main() {
     await tester.enterText(
         find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
         '42');
+    await tester.pump(); // le bouton passe à l'état actif
     await tester.tap(find.text('Ajouter'));
     await tester.pumpAndSettle();
 

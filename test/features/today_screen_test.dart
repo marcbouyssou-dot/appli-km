@@ -328,6 +328,7 @@ void main() {
       find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
       '24,5',
     );
+    await tester.pump(); // bouton actif (UX-003B1)
     await tester.tap(find.text('Ajouter'));
     await tester.pumpAndSettle();
 
@@ -488,6 +489,7 @@ void main() {
         find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
         '7,5',
       );
+      await tester.pump(); // bouton actif (UX-003B1)
       await tester.tap(find.text('Créer le favori'));
       await tester.pumpAndSettle();
 
@@ -557,6 +559,7 @@ void main() {
           find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
           '72',
         );
+        await tester.pump(); // bouton actif (UX-003B1)
         await tester.tap(find.text('Enregistrer'));
         await tester.pumpAndSettle();
 
@@ -613,6 +616,7 @@ void main() {
         find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
         '7,5',
       );
+      await tester.pump(); // bouton actif (UX-003B1)
       await tester.tap(find.text('Créer le favori'));
       await tester.pumpAndSettle();
 
@@ -641,6 +645,7 @@ void main() {
         find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
         '26',
       );
+      await tester.pump(); // bouton actif (UX-003B1)
       await tester.tap(find.text('Enregistrer'));
       await tester.pumpAndSettle();
       expect(find.text('26 km'), findsOneWidget); // ligne de gestion
@@ -671,6 +676,7 @@ void main() {
         find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
         '12',
       );
+      await tester.pump(); // bouton actif (UX-003B1)
       await tester.tap(find.text('Créer le favori'));
       await tester.pumpAndSettle();
       expect(find.text('Depuis Plus'), findsOneWidget);

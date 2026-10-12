@@ -183,6 +183,7 @@ void main() {
       find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
       '7,5',
     );
+    await tester.pump(); // le bouton passe à l'état actif
     await tester.tap(find.text('Ajouter'));
     await tester.pumpAndSettle();
     final trips = await tester.runAsync(

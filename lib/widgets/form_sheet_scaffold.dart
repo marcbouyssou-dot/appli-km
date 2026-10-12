@@ -29,7 +29,11 @@ class FormSheetScaffold extends StatelessWidget {
   final String? help;
   final List<Widget> children;
   final String primaryLabel;
-  final VoidCallback onPrimary;
+
+  /// null = action indisponible : le bouton prend l'état désactivé du
+  /// design system (garde UX précoce — les validations métier restent
+  /// autoritaires au submit).
+  final VoidCallback? onPrimary;
 
   @override
   Widget build(BuildContext context) {

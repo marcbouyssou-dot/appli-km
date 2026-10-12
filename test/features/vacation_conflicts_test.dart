@@ -137,6 +137,7 @@ void main() {
       find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
       '24',
     );
+    await tester.pump(); // bouton actif (UX-003B1)
     await tester.tap(find.text('Ajouter'));
     await tester.pumpAndSettle();
 
