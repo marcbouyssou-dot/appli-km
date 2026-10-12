@@ -199,10 +199,34 @@ class _DayCell extends StatelessWidget {
   final bool isVacation;
   final void Function(BuildContext context, CivilDate date) onTap;
 
+  /// Libellé VoiceOver : la cellule s'annonce comme UNE unité actionnable
+  /// (date complète + contenu), sans doublons (UX-007B).
+  String _semanticsLabel() {
+    final dateText = DateFormat('EEEE d MMMM yyyy', 'fr_FR')
+        .format(date.toDateTime());
+    final buffer = StringBuffer(
+        dateText[0].toUpperCase() + dateText.substring(1));
+    if (isToday) buffer.write(', aujourd’hui');
+    final km = totalKm;
+    if (km != null && km > 0) {
+      buffer.write(', ${formatKm(km)}');
+    } else if (isVacation) {
+      buffer.write(', congé');
+    }
+    return buffer.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasKm = totalKm != null && totalKm! > 0;
+
+    // UX-007B : hauteur adaptative BORNÉE — identique (58) à l'échelle 1,
+    // grandit jusqu'à 84 aux grandes tailles de texte ; au-delà, le
+    // FittedBox global réduit le contenu plutôt que de déborder (limite
+    // 2.0 documentée : contenu légèrement réduit, grille préservée).
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final cellHeight = (58.0 * textScale).clamp(58.0, 84.0);
 
     // Toute la cellule est tactile, hauteur confortable.
     // Priorités : numéro, km s'il y en a, congé.
@@ -211,8 +235,12 @@ class _DayCell extends StatelessWidget {
       key: Key('cal-cell-${date.toIso8601()}'),
       onTap: () => onTap(context, date),
       borderRadius: BorderRadius.circular(AppRadius.m),
-      child: Container(
-        height: 58,
+      child: Semantics(
+        button: true,
+        label: _semanticsLabel(),
+        excludeSemantics: true,
+        child: Container(
+        height: cellHeight,
         margin: const EdgeInsets.all(1),
         decoration: BoxDecoration(
           color: hasKm
@@ -225,7 +253,9 @@ class _DayCell extends StatelessWidget {
               : null,
           borderRadius: BorderRadius.circular(AppRadius.m),
         ),
-        child: Column(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
@@ -261,6 +291,8 @@ class _DayCell extends StatelessWidget {
                 ),
               ),
           ],
+          ),
+        ),
         ),
       ),
     );

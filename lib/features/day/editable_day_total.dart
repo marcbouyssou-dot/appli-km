@@ -150,7 +150,13 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
         ),
         child: Column(
           children: [
-            TextField(
+            // VoiceOver (UX-007B) : « Total du jour, modifiable » + la
+            // valeur du champ — le décor en dessous est exclu (pas de
+            // doublon d'annonce).
+            Semantics(
+              label: 'Total du jour',
+              hint: 'modifiable',
+              child: TextField(
               key: dayTotalFieldKey,
               controller: _controller,
               focusNode: _focusNode,
@@ -181,10 +187,13 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
                       theme.colorScheme.onSurface.withValues(alpha: 0.25),
                 ),
               ),
+              ),
             ),
             const SizedBox(height: AppSpacing.s),
             // Signature Mes Km (UX-001C) : trait « route » bleu → turquoise
             // sous le héros — un repère, pas une carte.
+            ExcludeSemantics(
+              child: Column(children: [
             Container(
               width: 56,
               height: 4,
@@ -222,6 +231,8 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
                   color: theme.colorScheme.primary,
                 ),
               ],
+            ),
+              ]),
             ),
           ],
         ),

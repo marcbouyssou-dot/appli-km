@@ -34,7 +34,20 @@ class MonthlyBarChart extends StatelessWidget {
       }
     }
 
-    return Column(
+    // VoiceOver (UX-007B) : UN résumé concis pour tout le graphique —
+    // les barres restent purement visuelles (données déjà disponibles,
+    // aucun nouveau calcul).
+    final semanticsSummary = max == 0
+        ? 'Évolution mensuelle des kilomètres. '
+            'Aucun kilomètre enregistré.'
+        : 'Évolution mensuelle des kilomètres. '
+            'Maximum : ${_monthName(maxIndex)}, ${formatKmGrouped(max)}.';
+
+    return Semantics(
+      label: semanticsSummary,
+      container: true,
+      child: ExcludeSemantics(
+        child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
@@ -116,6 +129,8 @@ class MonthlyBarChart extends StatelessWidget {
           ),
         ],
       ],
+        ),
+      ),
     );
   }
 

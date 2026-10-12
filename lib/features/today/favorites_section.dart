@@ -131,16 +131,22 @@ class FavoritesSection extends ConsumerWidget {
               child: SectionHeader('Trajets favoris',
                   topSpacing: 0, bottomSpacing: 0),
             ),
-            TextButton.icon(
-              key: const Key('create-favorite-row'),
-              onPressed: () => _createFavorite(context, ref),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Nouveau favori'),
-              style: TextButton.styleFrom(
-                foregroundColor: theme.mesKm.favorite,
-                minimumSize: const Size(0, AppSizes.minTouchTarget),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.s),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 190),
+              child: TextButton.icon(
+                key: const Key('create-favorite-row'),
+                onPressed: () => _createFavorite(context, ref),
+                icon: const Icon(Icons.add, size: 18),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Nouveau favori', maxLines: 1),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.mesKm.favorite,
+                  minimumSize: const Size(0, AppSizes.minTouchTarget),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.s),
+                ),
               ),
             ),
           ],
@@ -207,23 +213,32 @@ class FavoritesSection extends ConsumerWidget {
                           ),
                           const SizedBox(width: AppSpacing.s),
                           // Le « + » : la valeur ajoutée, très lisible,
-                          // sur une teinte d'action légère (pas de
-                          // capsule Material).
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.s,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer
-                                  .withValues(alpha: 0.45),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '+${formatKm(favorite.distanceKm)}',
-                              style: AppTypography.value.copyWith(
-                                fontSize: 20,
-                                color: theme.colorScheme.primary,
+                          // sur une teinte d'action légère. UX-007B :
+                          // taille dérivée du thème (titleLarge ≈ 20) et
+                          // FittedBox — la ligne ne peut plus déborder,
+                          // quelle que soit l'échelle de texte.
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.s,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer
+                                    .withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '+${formatKm(favorite.distanceKm)}',
+                                  maxLines: 1,
+                                  style:
+                                      theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -235,17 +250,26 @@ class FavoritesSection extends ConsumerWidget {
               ),
               Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.s),
-                child: TextButton(
-                  key: Key('edit-favorite-${favorite.id}'),
-                  onPressed: () => _editFavorite(context, favorite),
-                  style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.onSurfaceVariant,
-                    minimumSize: const Size(0, AppSizes.minTouchTarget),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.m,
+                // UX-007B : largeur bornée + FittedBox — aux très grandes
+                // échelles le libellé se réduit au lieu de pousser la
+                // ligne hors écran. Cible tactile inchangée (>= 48).
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 112),
+                  child: TextButton(
+                    key: Key('edit-favorite-${favorite.id}'),
+                    onPressed: () => _editFavorite(context, favorite),
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onSurfaceVariant,
+                      minimumSize: const Size(0, AppSizes.minTouchTarget),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.m,
+                      ),
+                    ),
+                    child: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Modifier', maxLines: 1),
                     ),
                   ),
-                  child: const Text('Modifier'),
                 ),
               ),
             ],
