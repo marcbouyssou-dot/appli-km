@@ -88,6 +88,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     controller: _nameController,
                     onChanged: (_) => _save(),
                     textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Nom / structure',
                       border: OutlineInputBorder(),
@@ -98,6 +99,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     controller: _addressController,
                     onChanged: (_) => _save(),
                     textCapitalization: TextCapitalization.sentences,
+                    textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Adresse',
                       border: OutlineInputBorder(),
@@ -108,6 +110,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     controller: _cityController,
                     onChanged: (_) => _save(),
                     textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(
                       labelText: 'Ville',
                       border: OutlineInputBorder(),

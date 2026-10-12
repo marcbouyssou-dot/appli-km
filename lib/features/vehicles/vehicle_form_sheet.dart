@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/vehicle.dart';
-import '../../widgets/app_buttons.dart';
+import '../../widgets/form_sheet_scaffold.dart';
 import '../../theme/tokens.dart';
 
 /// Valeurs saisies dans le formulaire de véhicule.
@@ -68,10 +68,27 @@ class _VehicleFormSheetState extends State<_VehicleFormSheet> {
     _category = initial?.category ?? VehicleCategory.car;
     _motorization = initial?.motorization ?? Motorization.unspecified;
     _twoWheelerClass = initial?.twoWheelerClass;
+    // Garde UX précoce (grammaire UX-003B1) : l'état du bouton suit la
+    // saisie — mêmes critères syntaxiques que le submit, rien de métier.
+    _requiredListener = () => setState(() {});
+    _nameController.addListener(_requiredListener);
+    _cvController.addListener(_requiredListener);
+  }
+
+  late final VoidCallback _requiredListener;
+
+  bool get _canSubmit {
+    if (_nameController.text.trim().isEmpty) return false;
+    final cvText = _cvController.text.trim();
+    if (cvText.isEmpty) return true; // CV facultatif
+    final cv = int.tryParse(cvText);
+    return cv != null && cv > 0;
   }
 
   @override
   void dispose() {
+    _nameController.removeListener(_requiredListener);
+    _cvController.removeListener(_requiredListener);
     _nameController.dispose();
     _cvController.dispose();
     _registrationController.dispose();
@@ -105,30 +122,20 @@ class _VehicleFormSheetState extends State<_VehicleFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isEditing = widget.initial != null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.xl,
-        right: AppSpacing.xl,
-        top: AppSpacing.s,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              isEditing ? 'Modifier le véhicule' : 'Nouveau véhicule',
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: AppSpacing.l),
+    // Grammaire V1 (UX-003C) : formulaire rare et COMPLET par nature —
+    // tous les champs visibles, pas d'accordéon, action épinglée.
+    return FormSheetScaffold(
+      title: isEditing ? 'Modifier le véhicule' : 'Nouveau véhicule',
+      primaryLabel: isEditing ? 'Enregistrer' : 'Ajouter le véhicule',
+      onPrimary: _canSubmit ? _submit : null,
+      children: [
             TextField(
               controller: _nameController,
               autofocus: !isEditing,
               textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 labelText: 'Nom',
                 hintText: 'Ex. : Peugeot 3008',
@@ -216,6 +223,7 @@ class _VehicleFormSheetState extends State<_VehicleFormSheet> {
             TextField(
               controller: _cvController,
               keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 labelText: 'Puissance fiscale (CV, facultatif)',
                 helperText: 'Utile pour la future estimation fiscale.',
@@ -227,27 +235,14 @@ class _VehicleFormSheetState extends State<_VehicleFormSheet> {
             TextField(
               controller: _registrationController,
               textCapitalization: TextCapitalization.characters,
+              textInputAction: TextInputAction.done,
               decoration: const InputDecoration(
                 labelText: 'Immatriculation (facultatif)',
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: AppSpacing.l),
-            PrimaryButton(
-              label: isEditing ? 'Enregistrer' : 'Ajouter le véhicule',
-              onPressed: _submit,
-            ),
             const SizedBox(height: AppSpacing.s),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                minimumSize: const Size.fromHeight(AppSizes.minTouchTarget),
-              ),
-              child: const Text('Annuler'),
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }

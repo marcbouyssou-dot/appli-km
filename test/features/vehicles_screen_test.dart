@@ -49,6 +49,7 @@ void main() {
           find.widgetWithText(TextField, 'Puissance fiscale (CV, facultatif)'),
           cv);
     }
+    await tester.pump(); // bouton actif (grammaire UX-003B1)
     await tester.tap(find.text('Ajouter le véhicule'));
     await tester.pumpAndSettle();
   }

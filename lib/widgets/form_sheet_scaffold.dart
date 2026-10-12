@@ -21,6 +21,8 @@ class FormSheetScaffold extends StatelessWidget {
     required this.children,
     required this.primaryLabel,
     required this.onPrimary,
+    this.cancelLabel = 'Annuler',
+    this.primaryKey,
   });
 
   final String title;
@@ -34,6 +36,13 @@ class FormSheetScaffold extends StatelessWidget {
   /// design system (garde UX précoce — les validations métier restent
   /// autoritaires au submit).
   final VoidCallback? onPrimary;
+
+  /// Clé posée sur le bouton principal (compatibilité des tests).
+  final Key? primaryKey;
+
+  /// Libellé de l'action d'en-tête (« Fermer » pour une feuille qui liste
+  /// aussi des éléments déjà enregistrés, comme les congés).
+  final String cancelLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +89,7 @@ class FormSheetScaffold extends StatelessWidget {
                   // Annulation compacte : complète le geste de balayage.
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Annuler'),
+                    child: Text(cancelLabel),
                   ),
                 ],
               ),
@@ -115,6 +124,7 @@ class FormSheetScaffold extends StatelessWidget {
                 ),
               ),
               child: PrimaryButton(
+                key: primaryKey,
                 label: primaryLabel,
                 onPressed: onPrimary,
               ),

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/vacation_period.dart';
-import '../../widgets/app_buttons.dart';
+import '../../widgets/form_sheet_scaffold.dart';
 import '../../widgets/section_header.dart';
 import '../../theme/tokens.dart';
 import '../vacations/vacations_controller.dart';
@@ -56,6 +56,12 @@ class _VacationsSheetState extends ConsumerState<_VacationsSheet> {
       }
       _error = null;
     });
+  }
+
+  bool get _canSubmit {
+    final start = _start;
+    final end = _end;
+    return start != null && end != null && !start.isAfter(end);
   }
 
   Future<void> _submit() async {
@@ -110,20 +116,16 @@ class _VacationsSheetState extends ConsumerState<_VacationsSheet> {
         ref.watch(vacationsControllerProvider).value ??
             const <VacationPeriod>[];
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.xl,
-        right: AppSpacing.xl,
-        top: AppSpacing.s,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Congés', style: theme.textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.l),
+    // Grammaire V1 (UX-003C) : feuille très simple, action épinglée.
+    // « Fermer » (pas « Annuler ») : les périodes listées sont déjà
+    // enregistrées.
+    return FormSheetScaffold(
+      title: 'Congés',
+      cancelLabel: 'Fermer',
+      primaryKey: const Key('vacation-add'),
+      primaryLabel: 'Ajouter ces congés',
+      onPrimary: _canSubmit ? _submit : null,
+      children: [
             Row(
               children: [
                 Expanded(
@@ -160,14 +162,7 @@ class _VacationsSheetState extends ConsumerState<_VacationsSheet> {
                 style: TextStyle(color: theme.colorScheme.error),
               ),
             ],
-            const SizedBox(height: AppSpacing.m),
-            PrimaryButton(
-              key: const Key('vacation-add'),
-              icon: Icons.beach_access_outlined,
-              label: 'Ajouter ces congés',
-              onPressed: _submit,
-            ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.l),
             if (periods.isNotEmpty) ...[
               const SectionHeader('Périodes existantes', topSpacing: 0),
               for (final period in periods)
@@ -190,16 +185,7 @@ class _VacationsSheetState extends ConsumerState<_VacationsSheet> {
                 ),
             ],
             const SizedBox(height: AppSpacing.s),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                minimumSize: const Size.fromHeight(AppSizes.minTouchTarget),
-              ),
-              child: const Text('Fermer'),
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }
