@@ -8,6 +8,7 @@ import '../../widgets/road_watermark.dart';
 import '../../widgets/section_header.dart';
 import '../backup/backup_screen.dart';
 import '../documents/documents_screen.dart';
+import '../legal/legal_screen.dart';
 import '../settings/settings_screen.dart';
 import '../today/manage_favorites_screen.dart';
 import '../vehicles/vehicles_screen.dart';
@@ -153,6 +154,15 @@ class MoreScreen extends StatelessWidget {
           title: 'Réglages',
           subtitle: 'Informations pour les documents',
           screen: () => const SettingsScreen(),
+          iconBackground: theme.colorScheme.surfaceContainerHighest,
+          iconColor: theme.colorScheme.onSurfaceVariant,
+        ),
+        hairline(),
+        row(
+          icon: Icons.balance_outlined,
+          title: 'Informations légales',
+          subtitle: 'Mentions, confidentialité et conditions',
+          screen: () => const LegalScreen(),
           iconBackground: theme.colorScheme.surfaceContainerHighest,
           iconColor: theme.colorScheme.onSurfaceVariant,
         ),
