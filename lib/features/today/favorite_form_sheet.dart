@@ -4,6 +4,7 @@ import '../../data/network/route_distance_service.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../domain/models/vehicle.dart';
 import '../../widgets/app_buttons.dart';
+import '../../widgets/form_sheet_scaffold.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import '../day/route_calc_section.dart';
@@ -141,39 +142,32 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
     ));
   }
 
+  /// Section facultative dépliée d'office en édition quand renseignée.
+  bool get _hasOptionalValues {
+    final initial = widget.initial;
+    return initial != null &&
+        (initial.origin != null ||
+            initial.destination != null ||
+            initial.purpose != null);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isEditing = widget.initial != null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.xl,
-        right: AppSpacing.xl,
-        top: AppSpacing.s,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              isEditing ? 'Modifier le favori' : 'Nouveau trajet favori',
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Disponible sur toutes les journées.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.l),
+    // CAS COURANT D'ABORD (UX-003B) : nom + distance + A/R, le reste dans
+    // « Itinéraire et détails », action principale épinglée.
+    return FormSheetScaffold(
+      title: isEditing ? 'Modifier le favori' : 'Nouveau trajet favori',
+      help: 'Disponible sur toutes les journées.',
+      primaryLabel: isEditing ? 'Enregistrer' : 'Créer le favori',
+      onPrimary: _submit,
+      children: [
             TextField(
               controller: _labelController,
               autofocus: !isEditing,
               textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 labelText: 'Nom du favori',
                 hintText: 'Ex. : Cabinet ↔ EHPAD',
@@ -186,6 +180,7 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
               controller: _distanceController,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              textInputAction: TextInputAction.done,
               decoration: InputDecoration(
                 labelText: 'Distance comptabilisée (km)',
                 helperText:
@@ -211,43 +206,53 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
                       'aller.'),
               contentPadding: EdgeInsets.zero,
             ),
-            TextField(
-              controller: _originController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Départ (facultatif)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.m),
-            TextField(
-              controller: _destinationController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Destination (facultatif)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            // Le calcul réseau sert uniquement à CONFIGURER le favori :
-            // chaque futur tap réutilisera la distance SANS réseau.
-            RouteCalcSection(
-              service: widget.routeService,
-              originController: _originController,
-              destinationController: _destinationController,
-              isRoundTrip: () => _defaultRoundTrip,
-              onUseDistance: (totalKm) => setState(() {
-                _distanceController.text = formatKmValue(totalKm);
-                _distanceError = null;
-              }),
-            ),
-            const SizedBox(height: AppSpacing.m),
-            TextField(
-              controller: _purposeController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Motif (facultatif)',
-                border: OutlineInputBorder(),
-              ),
+            const SizedBox(height: AppSpacing.s),
+            FormOptionalSection(
+              title: 'Itinéraire et détails',
+              initiallyExpanded: _hasOptionalValues,
+              children: [
+                TextField(
+                  controller: _originController,
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Départ',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.m),
+                TextField(
+                  controller: _destinationController,
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Destination',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                // Le calcul réseau sert uniquement à CONFIGURER le favori :
+                // chaque futur tap réutilisera la distance SANS réseau.
+                RouteCalcSection(
+                  service: widget.routeService,
+                  originController: _originController,
+                  destinationController: _destinationController,
+                  isRoundTrip: () => _defaultRoundTrip,
+                  onUseDistance: (totalKm) => setState(() {
+                    _distanceController.text = formatKmValue(totalKm);
+                    _distanceError = null;
+                  }),
+                ),
+                const SizedBox(height: AppSpacing.m),
+                TextField(
+                  controller: _purposeController,
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'Motif',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
             ),
             if (widget.vehicles.any((v) => !v.isArchived)) ...[
               const SizedBox(height: AppSpacing.m),
@@ -274,20 +279,8 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
                 onChanged: (value) => setState(() => _vehicleId = value),
               ),
             ],
-            const SizedBox(height: AppSpacing.l),
-            PrimaryButton(
-              label: isEditing ? 'Enregistrer' : 'Créer le favori',
-              onPressed: _submit,
-            ),
-            const SizedBox(height: AppSpacing.s),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                minimumSize: const Size.fromHeight(AppSizes.minTouchTarget),
-              ),
-              child: const Text('Annuler'),
-            ),
-            if (isEditing && widget.onDeleteRequested != null)
+            if (isEditing && widget.onDeleteRequested != null) ...[
+              const SizedBox(height: AppSpacing.m),
               DestructiveTextButton(
                 key: const Key('delete-favorite-from-form'),
                 icon: Icons.delete_outline,
@@ -299,9 +292,9 @@ class _FavoriteFormSheetState extends State<_FavoriteFormSheet> {
                   }
                 },
               ),
-          ],
-        ),
-      ),
+            ],
+            const SizedBox(height: AppSpacing.s),
+      ],
     );
   }
 }

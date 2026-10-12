@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# État local du CLI Netlify (DEPLOY-001) — jamais commité
+.netlify/

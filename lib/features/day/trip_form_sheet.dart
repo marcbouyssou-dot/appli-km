@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/network/route_distance_service.dart';
 import '../../domain/models/trip.dart';
 import '../../domain/models/vehicle.dart';
-import '../../widgets/app_buttons.dart';
+import '../../widgets/form_sheet_scaffold.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import 'route_calc_section.dart';
@@ -127,62 +127,68 @@ class _TripFormSheetState extends State<_TripFormSheet> {
     ));
   }
 
+  /// La section facultative s'ouvre d'elle-même en édition quand elle
+  /// contient déjà des valeurs.
+  bool get _hasOptionalValues {
+    final initial = widget.initial;
+    return initial != null &&
+        (initial.origin != null ||
+            initial.destination != null ||
+            initial.purpose != null);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isEditing = widget.initial != null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.xl,
-        right: AppSpacing.xl,
-        top: AppSpacing.s,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    // CAS COURANT D'ABORD (UX-003B) : distance + A/R immédiatement, le
+    // reste dans « Itinéraire et détails », action principale épinglée.
+    return FormSheetScaffold(
+      title: isEditing ? 'Modifier le trajet' : 'Ajouter un trajet',
+      primaryLabel: isEditing ? 'Enregistrer' : 'Ajouter',
+      onPrimary: _submit,
+      children: [
+        TextField(
+          controller: _distanceController,
+          autofocus: !isEditing,
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(
+            labelText: 'Distance comptabilisée (km)',
+            helperText:
+                'Distance totale réellement parcourue, A/R inclus.',
+            helperMaxLines: 2,
+            suffixText: 'km',
+            border: const OutlineInputBorder(),
+            errorText: _distanceError,
+            errorMaxLines: 2,
+          ),
+        ),
+        SwitchListTile(
+          value: _isRoundTrip,
+          onChanged: (value) => setState(() => _isRoundTrip = value),
+          title: const Text('Aller-retour'),
+          // Une distance déjà saisie n'est jamais doublée
+          // automatiquement ; seul le calcul d'itinéraire en tient compte.
+          subtitle: Text(_isRoundTrip
+              ? 'Le calcul d\u2019itinéraire proposera la distance '
+                  'aller-retour.'
+              : 'Le calcul d\u2019itinéraire proposera la distance '
+                  'aller.'),
+          contentPadding: EdgeInsets.zero,
+        ),
+        const SizedBox(height: AppSpacing.s),
+        FormOptionalSection(
+          title: 'Itinéraire et détails',
+          initiallyExpanded: _hasOptionalValues,
           children: [
-            Text(
-              isEditing ? 'Modifier le trajet' : 'Ajouter un trajet',
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: AppSpacing.l),
-            TextField(
-              controller: _distanceController,
-              autofocus: !isEditing,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Distance comptabilisée (km)',
-                helperText:
-                    'Distance totale réellement parcourue, A/R inclus.',
-                helperMaxLines: 2,
-                suffixText: 'km',
-                border: const OutlineInputBorder(),
-                errorText: _distanceError,
-                errorMaxLines: 2,
-              ),
-            ),
-            SwitchListTile(
-              value: _isRoundTrip,
-              onChanged: (value) => setState(() => _isRoundTrip = value),
-              title: const Text('Aller-retour'),
-              // Une distance déjà saisie n'est jamais doublée
-              // automatiquement ; seul le calcul d'itinéraire en tient compte.
-              subtitle: Text(_isRoundTrip
-                  ? 'Le calcul d\u2019itinéraire proposera la distance '
-                      'aller-retour.'
-                  : 'Le calcul d\u2019itinéraire proposera la distance '
-                      'aller.'),
-              contentPadding: EdgeInsets.zero,
-            ),
             TextField(
               controller: _originController,
               textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
-                labelText: 'Départ (facultatif)',
+                labelText: 'Départ',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -190,8 +196,9 @@ class _TripFormSheetState extends State<_TripFormSheet> {
             TextField(
               controller: _destinationController,
               textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
-                labelText: 'Destination (facultatif)',
+                labelText: 'Destination',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -210,53 +217,42 @@ class _TripFormSheetState extends State<_TripFormSheet> {
             TextField(
               controller: _purposeController,
               textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.done,
               decoration: const InputDecoration(
-                labelText: 'Motif (facultatif)',
+                labelText: 'Motif',
                 border: OutlineInputBorder(),
               ),
             ),
-            if (widget.vehicles.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.m),
-              DropdownButtonFormField<String?>(
-                key: const Key('trip-vehicle-field'),
-                isExpanded: true,
-                initialValue: _vehicleId,
-                decoration: const InputDecoration(
-                  labelText: 'Véhicule',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Aucun véhicule'),
-                  ),
-                  for (final vehicle in widget.vehicles)
-                    DropdownMenuItem<String?>(
-                      value: vehicle.id,
-                      child: Text(vehicle.isArchived
-                          ? '${vehicle.name} (archivé)'
-                          : vehicle.name),
-                    ),
-                ],
-                onChanged: (value) => setState(() => _vehicleId = value),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.l),
-            PrimaryButton(
-              label: isEditing ? 'Enregistrer' : 'Ajouter',
-              onPressed: _submit,
-            ),
-            const SizedBox(height: AppSpacing.s),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                minimumSize: const Size.fromHeight(AppSizes.minTouchTarget),
-              ),
-              child: const Text('Annuler'),
-            ),
           ],
         ),
-      ),
+        if (widget.vehicles.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.m),
+          DropdownButtonFormField<String?>(
+            key: const Key('trip-vehicle-field'),
+            isExpanded: true,
+            initialValue: _vehicleId,
+            decoration: const InputDecoration(
+              labelText: 'Véhicule',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Aucun véhicule'),
+              ),
+              for (final vehicle in widget.vehicles)
+                DropdownMenuItem<String?>(
+                  value: vehicle.id,
+                  child: Text(vehicle.isArchived
+                      ? '${vehicle.name} (archivé)'
+                      : vehicle.name),
+                ),
+            ],
+            onChanged: (value) => setState(() => _vehicleId = value),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.s),
+      ],
     );
   }
 }

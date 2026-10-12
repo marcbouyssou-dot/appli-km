@@ -78,14 +78,17 @@ void main() {
   Future<void> openTripForm(WidgetTester tester) async {
     await tester.tap(find.text('Ajouter un trajet'));
     await tester.pumpAndSettle();
+    // UX-003B : les adresses vivent dans « Itinéraire et détails »,
+    // repliée à la création — on l'ouvre comme le ferait l'utilisateur.
+    await tester.tap(find.byKey(const Key('optional-section-toggle')));
+    await tester.pumpAndSettle();
   }
 
   Future<void> fillAddresses(WidgetTester tester) async {
     await tester.enterText(
-        find.widgetWithText(TextField, 'Départ (facultatif)'), 'Maison');
+        find.widgetWithText(TextField, 'Départ'), 'Maison');
     await tester.enterText(
-        find.widgetWithText(TextField, 'Destination (facultatif)'),
-        'Cabinet');
+        find.widgetWithText(TextField, 'Destination'), 'Cabinet');
     await tester.pumpAndSettle();
   }
 
@@ -240,11 +243,16 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
         find.widgetWithText(TextField, 'Nom du favori'), 'Travail');
+    await tester.tap(find.byKey(const Key('optional-section-toggle')));
+    await tester.pumpAndSettle();
     await fillAddresses(tester);
+    await tester.ensureVisible(find.text('Aller-retour'));
     await tester.tap(find.text('Aller-retour'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('route-calc-button')));
     await tester.tap(find.byKey(const Key('route-calc-button')));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('route-calc-use')));
     await tester.tap(find.byKey(const Key('route-calc-use')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Créer le favori'));
