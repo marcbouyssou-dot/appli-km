@@ -8,7 +8,6 @@ import '../../widgets/app_buttons.dart';
 import '../../widgets/brand_header.dart';
 import '../../widgets/road_watermark.dart';
 import '../../widgets/km_format.dart';
-import '../../widgets/placeholder_card.dart';
 import '../../widgets/period_selector.dart';
 import 'calendar_controller.dart';
 import 'day_detail_screen.dart';
@@ -51,7 +50,7 @@ class _CalendarView extends ConsumerWidget {
 
   final CalendarState calendar;
 
-  static const _weekdayLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+  static const _weekdayLabels = ['L', 'Ma', 'Me', 'J', 'V', 'S', 'D'];
 
   String get _monthLabel {
     final label = DateFormat('MMMM yyyy', 'fr_FR')
@@ -76,13 +75,10 @@ class _CalendarView extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
       children: [
         const MesKmBrandHeader(),
-        const ScreenTitle(
-          'Calendrier',
-          topSpacing: AppSpacing.s,
-          bottomSpacing: AppSpacing.m,
-        ),
+        const SizedBox(height: AppSpacing.s),
 
-        // Navigation mensuelle : sélecteur partagé, chevrons larges.
+        // UX-004B : « Calendrier » est porté par l'onglet actif — le mois
+        // est le premier titre fonctionnel. Navigation : sélecteur partagé.
         PeriodSelector(
           label: _monthLabel,
           onPrevious: controller.previousMonth,
@@ -93,13 +89,14 @@ class _CalendarView extends ConsumerWidget {
           nextTooltip: 'Mois suivant',
         ),
 
-        // Total du mois, dérivé des données.
+        // Total du mois, dérivé des données — héros DONNÉE : encre,
+        // milliers groupés (le bleu reste réservé aux actions).
         Center(
           child: Text(
-            formatKm(calendar.monthTotal),
+            formatKmGrouped(calendar.monthTotal),
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w800,
-              color: theme.colorScheme.primary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ),
@@ -117,15 +114,6 @@ class _CalendarView extends ConsumerWidget {
               child: const Text('Revenir à aujourd’hui'),
             ),
           ),
-        Center(
-          child: QuietButton(
-            key: const Key('cal-vacations-button'),
-            onPressed: () => showVacationsSheet(context),
-            icon: Icons.beach_access_outlined,
-            label: 'Ajouter des congés',
-          ),
-        ),
-        const SizedBox(height: AppSpacing.m),
 
         // En-têtes de jours (lundi -> dimanche).
         Row(
@@ -145,6 +133,18 @@ class _CalendarView extends ConsumerWidget {
         const SizedBox(height: AppSpacing.s),
 
         ..._buildWeeks(context, theme),
+
+        // Action rare, déplacée SOUS la grille (UX-004B) : la grille est
+        // le centre visuel de l'écran. Même action, même feuille.
+        const SizedBox(height: AppSpacing.s),
+        Center(
+          child: QuietButton(
+            key: const Key('cal-vacations-button'),
+            onPressed: () => showVacationsSheet(context),
+            icon: Icons.beach_access_outlined,
+            label: 'Ajouter des congés',
+          ),
+        ),
         const SizedBox(height: AppSpacing.xxl),
       ],
       ),
@@ -237,25 +237,27 @@ class _DayCell extends StatelessWidget {
               ),
             ),
             if (hasKm)
-              Text(
-                formatKm(totalKm!),
-                maxLines: 1,
-                overflow: TextOverflow.clip,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: 10,
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  formatKm(totalKm!),
+                  maxLines: 1,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               )
             else if (isVacation)
-              Text(
-                'Congé',
-                maxLines: 1,
-                overflow: TextOverflow.clip,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: 9,
-                  color: theme.colorScheme.tertiary,
-                  fontWeight: FontWeight.bold,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Congé',
+                  maxLines: 1,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.tertiary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
           ],
