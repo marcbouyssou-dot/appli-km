@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../domain/models/favorite_trip.dart';
 import '../../domain/models/vehicle.dart';
 import '../../widgets/empty_state.dart';
+import '../../theme/mes_km_colors.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/km_format.dart';
 import '../vehicles/vehicles_controller.dart';
@@ -142,10 +143,11 @@ class _ManageFavoritesScreenState
           padding: const EdgeInsets.all(AppSpacing.l),
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.l),
+              padding: const EdgeInsets.only(bottom: AppSpacing.m),
+              // UX-006B : une seule ligne — le dialogue de suppression
+              // explique déjà qu'aucun trajet enregistré n'est touché.
               child: Text(
-                'Ces favoris sont proposés sur toutes les journées. '
-                'Les supprimer ne supprime aucun trajet déjà enregistré.',
+                'Proposés sur toutes les journées, en un toucher.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -154,57 +156,81 @@ class _ManageFavoritesScreenState
             if (favorites.isEmpty)
               const EmptyState('Aucun favori pour le moment.',
                   icon: Icons.star_outline),
-            for (var index = 0; index < favorites.length; index++)
-              Card(
-                margin: const EdgeInsets.only(bottom: AppSpacing.m),
-                child: ListTile(
-                  key: Key('manage-favorite-${favorites[index].id}'),
-                  onTap: () => _edit(favorites[index]),
-                  minTileHeight: AppSizes.minTouchTarget + 8,
-                  title: Text(
-                    favorites[index].label,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(formatKm(favorites[index].distanceKm)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_upward),
-                        tooltip: 'Monter',
-                        onPressed: index == 0
-                            ? null
-                            : () => ref
-                                .read(favoritesControllerProvider.notifier)
-                                .move(favorites[index].id, -1),
+            // UX-006B : plus de carte par favori — lignes à filets fins.
+            // Réordonner (groupe neutre) et Supprimer (rouge) sont
+            // visuellement SÉPARÉS par un filet vertical.
+            for (var index = 0; index < favorites.length; index++) ...[
+              ListTile(
+                key: Key('manage-favorite-${favorites[index].id}'),
+                onTap: () => _edit(favorites[index]),
+                contentPadding: EdgeInsets.zero,
+                minTileHeight: AppSizes.minTouchTarget + 8,
+                title: Text(
+                  favorites[index].label,
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(formatKm(favorites[index].distanceKm)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_upward),
+                      tooltip: 'Monter',
+                      color: theme.colorScheme.onSurfaceVariant,
+                      onPressed: index == 0
+                          ? null
+                          : () => ref
+                              .read(favoritesControllerProvider.notifier)
+                              .move(favorites[index].id, -1),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_downward),
+                      tooltip: 'Descendre',
+                      color: theme.colorScheme.onSurfaceVariant,
+                      onPressed: index == favorites.length - 1
+                          ? null
+                          : () => ref
+                              .read(favoritesControllerProvider.notifier)
+                              .move(favorites[index].id, 1),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s),
+                      child: SizedBox(
+                        height: 24,
+                        child: VerticalDivider(
+                          width: 1,
+                          color: theme.colorScheme.outlineVariant,
+                        ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_downward),
-                        tooltip: 'Descendre',
-                        onPressed: index == favorites.length - 1
-                            ? null
-                            : () => ref
-                                .read(favoritesControllerProvider.notifier)
-                                .move(favorites[index].id, 1),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        tooltip: 'Supprimer',
-                        onPressed: () => _delete(favorites[index]),
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Supprimer',
+                      color: theme.colorScheme.error,
+                      onPressed: () => _delete(favorites[index]),
+                    ),
+                  ],
                 ),
               ),
+              Divider(height: 1, color: theme.colorScheme.outlineVariant),
+            ],
             const SizedBox(height: AppSpacing.s),
-            FilledButton.tonalIcon(
-              onPressed: _create,
-              icon: const Icon(Icons.add),
-              label: const Text('Nouveau favori'),
-              style: FilledButton.styleFrom(
-                minimumSize:
-                    const Size.fromHeight(AppSizes.minTouchTarget + 8),
+            // Création : même présentation que l'action validée
+            // d'Aujourd'hui (couleur de la récurrence), un seul toucher.
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _create,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Nouveau favori'),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.mesKm.favorite,
+                  minimumSize: const Size(0, AppSizes.minTouchTarget),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s),
+                ),
               ),
             ),
           ],

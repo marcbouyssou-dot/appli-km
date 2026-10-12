@@ -8,6 +8,7 @@ import '../../widgets/km_format.dart';
 import '../../widgets/app_buttons.dart';
 import '../../widgets/period_selector.dart';
 import '../../widgets/section_header.dart';
+import '../settings/settings_screen.dart';
 import 'documents_controller.dart';
 
 /// Plus → Documents : relevé annuel PDF et détail CSV, générés localement.
@@ -96,7 +97,37 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.s),
+                  // UX-006B : liaison explicite — l'identité du PDF vient
+                  // de Plus → Réglages (navigation directe, même écran).
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'L’en-tête du PDF utilise vos informations de',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        key: const Key('docs-open-settings'),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const SettingsScreen(),
+                            ),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          minimumSize:
+                              const Size(0, AppSizes.minTouchTarget),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs),
+                        ),
+                        child: const Text('Réglages'),
+                      ),
+                    ],
+                  ),
                   PrimaryButton(
                     key: const Key('create-pdf-button'),
                     icon: Icons.picture_as_pdf_outlined,
@@ -125,15 +156,6 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                     onPressed: hasData && !_generating
                         ? () => _generate(controller.createCsv)
                         : null,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  Text(
-                    'Les documents sont générés localement à partir des '
-                    'données enregistrées dans Mes Km.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
                   ),
                 ],
               ),
