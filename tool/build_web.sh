@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 SHA="${1:-dev}"
 
-flutter build web --dart-define=MESKM_GIT_SHA="$SHA"
+flutter build web --no-web-resources-cdn --dart-define=MESKM_GIT_SHA="$SHA"
 
 python3 - "$SHA" <<'PY'
 import json, os, sys

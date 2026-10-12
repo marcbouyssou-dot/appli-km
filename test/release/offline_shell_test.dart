@@ -68,6 +68,9 @@ void main() {
     //    (scope « / » par défaut), base href « / », start_url « . ».
     final builtIndex = File('$root/index.html').readAsStringSync();
     expect(builtIndex, contains('<base href="/">'));
+    // UX-008D : CanvasKit LOCAL (le défaut Flutter charge le renderer
+    // depuis gstatic => écran de démarrage éternel hors ligne).
+    expect(builtIndex, contains('"useLocalCanvasKit":true'));
     expect(builtIndex, contains("serviceWorker.register('sw.js')"));
     // Le loader minifié contient le mot dans son API : l'invariant
     // réel est l'appel NU (aucune serviceWorkerVersion injectée).

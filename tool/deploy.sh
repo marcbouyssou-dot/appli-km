@@ -39,6 +39,10 @@ echo "== Mes Km deploy : main@$short_sha =="
 flutter pub get
 tool/build_web.sh "$short_sha"
 
+# Porte de régression HORS LIGNE (UX-008D) : le build qui part en
+# production doit démarrer sans réseau dans un vrai navigateur.
+node tool/offline_gate.mjs
+
 netlify deploy --prod --dir build/web --site "$SITE_ID" \
   --message "main@$short_sha"
 
