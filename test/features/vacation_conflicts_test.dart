@@ -74,24 +74,16 @@ void main() {
           .runAsync(() => SembastVacationRepository(database.db).getAll()))!;
 
   testWidgets(
-      'journée avec km : « Marquer comme congé » refusé, aucun km supprimé',
+      'journée avec km : « Marquer comme congé » n’est plus proposé '
+      '(UX-002B : l’action ne peut pas réussir), km intacts — la règle '
+      'congé ≠ km reste couverte par le garde (tests ci-dessous)',
       (tester) async {
     await seedTrip(tester, today, 42);
     await pumpApp(tester);
 
-    await tester.tap(find.byKey(const Key('mark-vacation-button')));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.textContaining('contient déjà 42 km'),
-      findsOneWidget,
-    );
-    expect(
-      find.textContaining('Effacez d’abord les kilomètres'),
-      findsOneWidget,
-    );
-    await tester.tap(find.text('OK'));
-    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('mark-vacation-button')), findsNothing);
+    expect(find.byKey(const Key('clear-day-button')), findsOneWidget,
+        reason: 'une seule action exceptionnelle à la fois');
 
     expect(await storedPeriods(tester), isEmpty);
     expect(find.text('42 km'), findsOneWidget); // km intacts

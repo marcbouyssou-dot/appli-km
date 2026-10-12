@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import '../../app/providers.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/brand_header.dart';
-import '../../widgets/placeholder_card.dart';
 import '../../widgets/road_watermark.dart';
 import '../day/day_view.dart';
 
@@ -26,18 +25,15 @@ class TodayScreen extends ConsumerWidget {
         date: today,
         header: [
           const MesKmBrandHeader(),
-          const ScreenTitle(
-            'Aujourd’hui',
-            topSpacing: AppSpacing.s,
-            bottomSpacing: 0,
-          ),
+          // UX-002B : « Aujourd'hui » est déjà porté par l'onglet actif —
+          // la date complète est la seule ligne de contexte.
           Text(
             dateText[0].toUpperCase() + dateText.substring(1),
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: AppSpacing.l),
+          const SizedBox(height: AppSpacing.m),
         ],
       ),
     );

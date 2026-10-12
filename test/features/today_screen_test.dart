@@ -271,9 +271,10 @@ void main() {
 
     expectTotal(tester, '0');
     expect(find.text('Autres kilomètres'), findsNothing);
+    // UX-002B : plus d'état vide redondant — le compteur à 0 suffit.
     expect(
       find.text('Aucun kilomètre enregistré ce jour-là.'),
-      findsOneWidget,
+      findsNothing,
     );
     final stored = await tester.runAsync(
         () => SembastDayExtraRepository(database.db).getForDate(day));

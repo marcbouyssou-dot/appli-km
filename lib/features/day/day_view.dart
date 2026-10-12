@@ -9,7 +9,6 @@ import '../../domain/models/vacation_period.dart';
 import '../../theme/mes_km_colors.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/app_buttons.dart';
-import '../../widgets/empty_state.dart';
 import '../../widgets/km_format.dart';
 import '../../widgets/section_header.dart';
 import '../../domain/models/vehicle.dart';
@@ -432,9 +431,6 @@ class _DayContent extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.l),
 
-        if (day.isEmpty)
-          const EmptyState('Aucun kilomètre enregistré ce jour-là.'),
-
         if (day.trips.isNotEmpty) ...[
           const SectionHeader('Trajets détaillés', topSpacing: 0),
           // Hiérarchie secondaire (UX-001B) : filets fins, pas de carte.
@@ -515,9 +511,11 @@ class _DayContent extends ConsumerWidget {
           ),
         ],
 
-        // Marquage congé : action explicite, refusée si la journée a des
-        // kilomètres. (JOUR VIDE ≠ CONGÉ : rien n'est jamais automatique.)
-        if (!isVacation) ...[
+        // Pied contextuel (UX-002B) : UNE action exceptionnelle à la fois.
+        // « Marquer comme congé » n'apparaît que lorsque l'action peut
+        // réussir (jour vide) ; la protection métier dans _markVacation est
+        // CONSERVÉE en défense (JOUR VIDE ≠ CONGÉ, rien d'automatique).
+        if (!isVacation && day.isEmpty) ...[
           const SizedBox(height: AppSpacing.l),
           Center(
             child: QuietButton(

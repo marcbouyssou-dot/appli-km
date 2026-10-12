@@ -123,7 +123,28 @@ class FavoritesSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader('Trajets favoris', topSpacing: 0),
+        // UX-002B : la création (geste rare) vit dans l'en-tête de
+        // section — toujours visible, 1 tap, même formulaire global.
+        Row(
+          children: [
+            const Expanded(
+              child: SectionHeader('Trajets favoris',
+                  topSpacing: 0, bottomSpacing: 0),
+            ),
+            TextButton.icon(
+              key: const Key('create-favorite-row'),
+              onPressed: () => _createFavorite(context, ref),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Nouveau favori'),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.mesKm.favorite,
+                minimumSize: const Size(0, AppSizes.minTouchTarget),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.s),
+              ),
+            ),
+          ],
+        ),
         for (final favorite in favorites) ...[
           Row(
             children: [
@@ -134,7 +155,7 @@ class FavoritesSection extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(AppRadius.s),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
-                      minHeight: AppSizes.minTouchTarget + 12,
+                      minHeight: AppSizes.minTouchTarget + 8,
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -231,25 +252,6 @@ class FavoritesSection extends ConsumerWidget {
           ),
           Divider(height: 1, color: theme.colorScheme.outlineVariant),
         ],
-        // Créer reste possible EN CONTEXTE même quand des favoris
-        // existent (régression KM-008A) — action secondaire compacte,
-        // même formulaire global que partout ailleurs.
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            key: const Key('create-favorite-row'),
-            onPressed: () => _createFavorite(context, ref),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Nouveau favori'),
-            style: TextButton.styleFrom(
-              // Couleur de la récurrence, en léger : action secondaire.
-              foregroundColor: theme.mesKm.favorite,
-              minimumSize: const Size(0, AppSizes.minTouchTarget),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.s),
-            ),
-          ),
-        ),
         const SizedBox(height: AppSpacing.m),
       ],
     );
