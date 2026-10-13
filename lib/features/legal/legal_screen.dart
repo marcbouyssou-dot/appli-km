@@ -4,14 +4,16 @@ import '../../app/build_info.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/section_header.dart';
 
-/// Informations légales (LEGAL-001B) — page STATIQUE unique, compilée dans
+/// Informations légales (LEGAL-001B/C) — page STATIQUE unique, compilée dans
 /// l'application (donc disponible hors ligne par construction), quatre
-/// sections. Textes = brouillons validés LEGAL-001A/B, en attente de
-/// relecture juridique finale (LEGAL_DRAFT_PREPARED, pas encore publiés).
+/// sections. Contact opérationnel : contact@meskm.fr (vérifié humainement,
+/// LEGAL-001C). Édition « à titre non professionnel » : régime de
+/// l'article 1-1, II de la LCEN (loi 2004-575 modifiée) — ni téléphone ni
+/// immatriculation exigés ; l'identité affichée va au-delà du minimum légal.
 ///
-/// RÈGLES CRITIQUES : aucune adresse e-mail tant que le contact n'est pas
-/// opérationnel ; jamais de « marque déposée » ni de symbole (R) ; aucune
-/// coordonnée inventée (SIRET, téléphone…).
+/// RÈGLES CRITIQUES : seule adresse e-mail autorisée : contact@meskm.fr ;
+/// jamais de « marque déposée » ni de symbole (R) ; aucune coordonnée
+/// inventée (SIRET, téléphone…).
 class LegalScreen extends StatelessWidget {
   const LegalScreen({super.key});
 
@@ -51,16 +53,15 @@ class LegalScreen extends StatelessWidget {
             // ----------------------------------------------------------
             const SectionHeader('MENTIONS LÉGALES', topSpacing: AppSpacing.s),
             heading('Éditeur'),
-            para('L’application « Mes Km » est éditée par Marc Bouyssou, '
-                'personne physique.'),
-            para('Adresse professionnelle :\n'
+            para('L’application « Mes Km » est éditée à titre non '
+                'professionnel par Marc Bouyssou, personne physique.'),
+            para('Adresse :\n'
                 'Rue Combe Maurette\n'
                 '19700 Seilhac\n'
                 'France'),
             para('Directeur de la publication : Marc Bouyssou.'),
             heading('Contact'),
-            para('Une adresse de contact dédiée à Mes Km sera mise à '
-                'disposition avant l’ouverture du pilote public.'),
+            para('contact@meskm.fr'),
             heading('Hébergement'),
             para('Le site et l’application Mes Km sont actuellement '
                 'hébergés par Netlify, Inc., 101 2nd Street, '
@@ -131,8 +132,7 @@ class LegalScreen extends StatelessWidget {
                 'sauvegarde récente.'),
             heading('Droits et contact'),
             para('Pour toute question concernant la confidentialité ou '
-                'l’exercice de droits applicables, un contact dédié sera '
-                'indiqué avant l’ouverture du pilote public.'),
+                'l’exercice de droits applicables : contact@meskm.fr'),
             hairline(),
 
             // ----------------------------------------------------------

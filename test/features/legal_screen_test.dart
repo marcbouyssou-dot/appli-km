@@ -40,23 +40,26 @@ void main() {
 
   // La page est une ListView paresseuse : le texte défilé hors écran est
   // démonté. On collecte donc le texte EN CUMULANT pendant le défilement.
+  // Les fenêtres de collecte se chevauchent : on déduplique par contenu de
+  // widget Text (chaque paragraphe de la page est une chaîne distincte).
   Future<String> collectAllText(WidgetTester tester) async {
-    final buffer = StringBuffer();
+    final seen = <String>{};
     final scrollable = find.byType(Scrollable).first;
-    String snapshot() => tester
+    List<String> snapshot() => tester
         .widgetList<Text>(find.byType(Text))
         .map((t) => t.data ?? '')
-        .join('\n');
+        .toList();
     var previous = '';
     for (var i = 0; i < 40; i++) {
       final current = snapshot();
-      buffer.writeln(current);
-      if (current == previous) break; // bas atteint : plus rien ne bouge
-      previous = current;
+      seen.addAll(current);
+      final joined = current.join('\n');
+      if (joined == previous) break; // bas atteint : plus rien ne bouge
+      previous = joined;
       await tester.drag(scrollable, const Offset(0, -500));
       await tester.pumpAndSettle();
     }
-    return buffer.toString();
+    return seen.join('\n');
   }
 
   testWidgets(
@@ -129,18 +132,21 @@ void main() {
     expect(text, contains('ODbL'));
     expect(text, contains('SIL Open Font License'));
 
-    // GARDE-FOUS CRITIQUES.
-    expect(text, isNot(contains('contact@meskm.fr')),
-        reason: 'adresse non opérationnelle : jamais affichée');
-    expect(text, isNot(contains('@')),
-        reason: 'aucune adresse e-mail inventée');
+    // GARDE-FOUS CRITIQUES (LEGAL-001C : contact opérationnel).
+    // Le contact figure DEUX fois : Mentions légales + Droits (confidentialité).
+    expect('contact@meskm.fr'.allMatches(text).length, 2,
+        reason: 'contact opérationnel dans Mentions ET Confidentialité');
+    expect('@'.allMatches(text).length, 2,
+        reason: 'aucune autre adresse e-mail que contact@meskm.fr');
+    expect(text, isNot(contains('sera mise à disposition')),
+        reason: 'plus aucune formulation « contact à venir »');
+    expect(text, isNot(contains('sera indiqué')),
+        reason: 'plus aucune formulation « contact à venir »');
+    expect(text, contains('à titre non professionnel'),
+        reason: 'régime LCEN art. 1-1, II (éditeur non professionnel)');
     expect(text, isNot(contains('®')));
     expect(text, isNot(contains('marque déposée')));
     expect(text, isNot(contains('À COMPLÉTER')));
-    expect(text, contains('Une adresse de contact dédiée à Mes Km sera '
-        'mise à disposition avant l’ouverture du pilote public.'));
-    expect(text, contains('un contact dédié sera '
-        'indiqué avant l’ouverture du pilote public.'));
 
     // Licences des composants : vue standard Flutter.
     await tester.scrollUntilVisible(
