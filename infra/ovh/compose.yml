@@ -1,0 +1,52 @@
+name: meskm
+
+services:
+  web:
+    # Official nginx stable-alpine, linux/amd64; pinned at the audited digest.
+    image: nginx@sha256:84ed8c0dd296c188bfc24ed506f46589e9285fb0b11cf3a04d91d524d3067e11
+    platform: linux/amd64
+    container_name: meskm-web
+    user: "101:101"
+    entrypoint: [nginx]
+    command: [-c, /etc/meskm/nginx.conf, -g, "daemon off;"]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    cpus: 0.25
+    pids_limit: 64
+    tmpfs:
+      - /tmp:size=32m,mode=1777,noexec,nosuid,nodev
+    volumes:
+      - type: bind
+        source: ./nginx.conf
+        target: /etc/meskm/nginx.conf
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./releases/${MESKM_RELEASE:?Set MESKM_RELEASE to an existing release}/web
+        target: /srv/meskm
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      ingress:
+        aliases: [meskm-web]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/healthz]
+      interval: 20s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "3"
+
+networks:
+  ingress:
+    external: true
+    name: meskm-ingress

@@ -32,6 +32,10 @@ void main() {
     factory = newDatabaseFactoryMemory();
     database = await MesKmDatabase.open(factory, name: 'today.db');
     container = await makeContainer();
+    // Comme DayView, attendre le chargement initial avant d'autoriser
+    // une mutation : sinon build() peut terminer après _refresh() et
+    // remplacer l'état testé par son ancien instantané vide.
+    await container.read(dayControllerProvider(day).future);
   });
 
   tearDown(() => database.close());
