@@ -162,7 +162,7 @@ void main() {
         km,
       );
       await tester.pump(); // bouton actif (UX-003B1)
-      await tester.tap(find.text('Ajouter'));
+      await tester.tap(find.text('Enregistrer le trajet'));
       await tester.pumpAndSettle();
     }
 

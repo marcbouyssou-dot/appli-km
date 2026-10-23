@@ -11,6 +11,7 @@ import '../../widgets/km_format.dart';
 import '../vehicles/vehicles_controller.dart';
 import 'favorite_form_sheet.dart';
 import 'favorites_controller.dart';
+import 'favorite_days_screen.dart';
 
 /// Gestion des trajets favoris : créer, modifier, supprimer, réordonner.
 ///
@@ -31,8 +32,7 @@ class ManageFavoritesScreen extends ConsumerStatefulWidget {
       _ManageFavoritesScreenState();
 }
 
-class _ManageFavoritesScreenState
-    extends ConsumerState<ManageFavoritesScreen> {
+class _ManageFavoritesScreenState extends ConsumerState<ManageFavoritesScreen> {
   bool _autoOpenHandled = false;
 
   List<Vehicle> _activeVehicles() =>
@@ -45,7 +45,9 @@ class _ManageFavoritesScreenState
       routeService: ref.read(routeDistanceServiceProvider),
     );
     if (result == null) return;
-    await ref.read(favoritesControllerProvider.notifier).create(
+    await ref
+        .read(favoritesControllerProvider.notifier)
+        .create(
           label: result.label,
           distanceKm: result.distanceKm,
           defaultRoundTrip: result.defaultRoundTrip,
@@ -65,7 +67,9 @@ class _ManageFavoritesScreenState
       onDeleteRequested: () => _delete(favorite),
     );
     if (result == null) return;
-    await ref.read(favoritesControllerProvider.notifier).updateFavorite(
+    await ref
+        .read(favoritesControllerProvider.notifier)
+        .updateFavorite(
           favorite,
           label: result.label,
           distanceKm: result.distanceKm,
@@ -154,8 +158,10 @@ class _ManageFavoritesScreenState
               ),
             ),
             if (favorites.isEmpty)
-              const EmptyState('Aucun favori pour le moment.',
-                  icon: Icons.star_outline),
+              const EmptyState(
+                'Aucun favori pour le moment.',
+                icon: Icons.star_outline,
+              ),
             // UX-006B : plus de carte par favori — lignes à filets fins.
             // Réordonner (groupe neutre) et Supprimer (rouge) sont
             // visuellement SÉPARÉS par un filet vertical.
@@ -167,8 +173,9 @@ class _ManageFavoritesScreenState
                 minTileHeight: AppSizes.minTouchTarget + 8,
                 title: Text(
                   favorites[index].label,
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 subtitle: Text(formatKm(favorites[index].distanceKm)),
                 trailing: Row(
@@ -181,8 +188,8 @@ class _ManageFavoritesScreenState
                       onPressed: index == 0
                           ? null
                           : () => ref
-                              .read(favoritesControllerProvider.notifier)
-                              .move(favorites[index].id, -1),
+                                .read(favoritesControllerProvider.notifier)
+                                .move(favorites[index].id, -1),
                     ),
                     IconButton(
                       icon: const Icon(Icons.arrow_downward),
@@ -191,12 +198,13 @@ class _ManageFavoritesScreenState
                       onPressed: index == favorites.length - 1
                           ? null
                           : () => ref
-                              .read(favoritesControllerProvider.notifier)
-                              .move(favorites[index].id, 1),
+                                .read(favoritesControllerProvider.notifier)
+                                .move(favorites[index].id, 1),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s),
+                        horizontal: AppSpacing.s,
+                      ),
                       child: SizedBox(
                         height: 24,
                         child: VerticalDivider(
@@ -214,6 +222,20 @@ class _ManageFavoritesScreenState
                   ],
                 ),
               ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: Key('favorite-days-${favorites[index].id}'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          FavoriteDaysScreen(favorite: favorites[index]),
+                    ),
+                  ),
+                  icon: const Icon(Icons.calendar_month_outlined, size: 20),
+                  label: const Text('Autres jours'),
+                ),
+              ),
               Divider(height: 1, color: theme.colorScheme.outlineVariant),
             ],
             const SizedBox(height: AppSpacing.s),
@@ -228,8 +250,7 @@ class _ManageFavoritesScreenState
                 style: TextButton.styleFrom(
                   foregroundColor: theme.mesKm.favorite,
                   minimumSize: const Size(0, AppSizes.minTouchTarget),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s),
                 ),
               ),
             ),

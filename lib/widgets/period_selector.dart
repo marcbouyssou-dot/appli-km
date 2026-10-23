@@ -19,8 +19,8 @@ class PeriodSelector extends StatelessWidget {
   });
 
   final String label;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
   final String previousTooltip;
   final String nextTooltip;
   final Key? previousKey;

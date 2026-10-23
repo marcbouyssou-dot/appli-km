@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../domain/models/app_settings.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/section_header.dart';
+import 'accountant_screen.dart';
 
 /// Réglages minimaux : les informations utilisées par les documents.
 /// Champs AppSettings EXISTANTS (aucune extension de modèle, donc aucune
@@ -52,15 +53,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _save() async {
     final repo = ref.read(settingsRepositoryProvider);
     final current = await repo.get();
-    await repo.save(AppSettings(
-      displayName: _nameController.text,
-      address: _addressController.text,
-      city: _cityController.text,
-      documentRecipientName: current.documentRecipientName,
-      documentRecipientAddress: current.documentRecipientAddress,
-      mainVehicleId: current.mainVehicleId,
-      themePreference: current.themePreference,
-    ));
+    await repo.save(
+      AppSettings(
+        displayName: _nameController.text,
+        address: _addressController.text,
+        city: _cityController.text,
+        documentRecipientName: current.documentRecipientName,
+        documentRecipientAddress: current.documentRecipientAddress,
+        mainVehicleId: current.mainVehicleId,
+        themePreference: current.themePreference,
+        accountant: current.accountant,
+      ),
+    );
   }
 
   @override
@@ -75,8 +79,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             : ListView(
                 padding: const EdgeInsets.all(AppSpacing.l),
                 children: [
-                  const SectionHeader('INFORMATIONS POUR LES DOCUMENTS',
-                      topSpacing: 0),
+                  const SectionHeader(
+                    'INFORMATIONS POUR LES DOCUMENTS',
+                    topSpacing: 0,
+                  ),
                   Text(
                     'Affichées en tête du relevé annuel. Enregistrées '
                     'uniquement sur cet appareil.',
@@ -118,6 +124,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.business_outlined),
+                    title: const Text('Cabinet comptable'),
+                    subtitle: const Text('Coordonnées pour vos relevés PDF'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AccountantScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
                   // Identité de build (UX-008B) : discrète, non interactive.
                   Center(
                     child: Text(

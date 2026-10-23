@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/providers.dart';
 import '../../domain/logic/day_total.dart';
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/km.dart';
@@ -39,8 +40,9 @@ class EditableDayTotal extends ConsumerStatefulWidget {
 }
 
 class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
-  late final TextEditingController _controller =
-      TextEditingController(text: formatKmValue(widget.totalKm));
+  late final TextEditingController _controller = TextEditingController(
+    text: formatKmValue(widget.totalKm),
+  );
   final FocusNode _focusNode = FocusNode();
   bool _committing = false;
 
@@ -153,86 +155,128 @@ class _EditableDayTotalState extends ConsumerState<EditableDayTotal> {
             // VoiceOver (UX-007B) : « Total du jour, modifiable » + la
             // valeur du champ — le décor en dessous est exclu (pas de
             // doublon d'annonce).
-            Semantics(
-              label: 'Total du jour',
-              hint: 'modifiable',
-              child: TextField(
-              key: dayTotalFieldKey,
-              controller: _controller,
-              focusNode: _focusNode,
-              textAlign: TextAlign.center,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _focusNode.unfocus(),
-              // Aspect compteur : pas de sélection interactive (donc pas
-              // de poignées ni de surlignage), pas de suggestions.
-              enableInteractiveSelection: false,
-              autocorrect: false,
-              enableSuggestions: false,
-              // Compteur : pas de curseur clignotant (la frappe reste
-              // visible, le contrôle reste un vrai champ accessible).
-              showCursor: false,
-              style: valueStyle,
-              decoration: InputDecoration(
-                isCollapsed: true,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                // Pendant l'édition (champ vidé), l'ancienne valeur reste
-                // affichée en filigrane, même taille, même place.
-                hintText: formatKmValue(widget.totalKm),
-                hintStyle: valueStyle?.copyWith(
-                  color:
-                      theme.colorScheme.onSurface.withValues(alpha: 0.25),
-                ),
-              ),
-              ),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _controller,
+              builder: (context, value, _) {
+                final text = value.text.isEmpty
+                    ? formatKmValue(widget.totalKm)
+                    : value.text;
+                final painter = TextPainter(
+                  text: TextSpan(text: text, style: valueStyle),
+                  textDirection: TextDirection.ltr,
+                  textScaler: MediaQuery.textScalerOf(context),
+                )..layout();
+                return FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      SizedBox(
+                        width: painter.width + 12,
+                        child: Semantics(
+                          label: 'Total du jour en kilomètres',
+                          hint: 'modifiable',
+                          child: TextField(
+                            key: dayTotalFieldKey,
+                            controller: _controller,
+                            focusNode: _focusNode,
+                            textAlign: TextAlign.center,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _focusNode.unfocus(),
+                            // Aspect compteur : pas de sélection interactive (donc pas
+                            // de poignées ni de surlignage), pas de suggestions.
+                            enableInteractiveSelection: false,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            // Compteur : pas de curseur clignotant (la frappe reste
+                            // visible, le contrôle reste un vrai champ accessible).
+                            showCursor: false,
+                            style: valueStyle,
+                            decoration: InputDecoration(
+                              isCollapsed: true,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              // Pendant l'édition (champ vidé), l'ancienne valeur reste
+                              // affichée en filigrane, même taille, même place.
+                              hintText: formatKmValue(widget.totalKm),
+                              hintStyle: valueStyle?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.25,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      ExcludeSemantics(
+                        child: Text(
+                          'km',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(height: AppSpacing.s),
             // Signature Mes Km (UX-001C) : trait « route » bleu → turquoise
             // sous le héros — un repère, pas une carte.
             ExcludeSemantics(
-              child: Column(children: [
-            Container(
-              width: 56,
-              height: 4,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.mesKm.mobility,
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    'km aujourd’hui',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w400,
+              child: Column(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(2),
+                      gradient: LinearGradient(
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.mesKm.mobility,
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.s),
-                // Affordance discrète mais explicite : crayon bleu.
-                Icon(
-                  Icons.edit_outlined,
-                  size: 17,
-                  color: theme.colorScheme.primary,
-                ),
-              ],
-            ),
-              ]),
+                  const SizedBox(height: AppSpacing.s),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          widget.date == ref.watch(todayDateProvider)()
+                              ? 'aujourd’hui'
+                              : 'ce jour',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      // Affordance discrète mais explicite : crayon bleu.
+                      Icon(
+                        Icons.edit_outlined,
+                        size: 17,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),

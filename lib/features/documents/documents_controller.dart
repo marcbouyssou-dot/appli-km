@@ -10,7 +10,9 @@ import '../../domain/models/day_extra.dart';
 import '../../domain/models/trip.dart';
 import 'csv_builder.dart';
 import 'pdf_builder.dart';
+import 'pdf_brand_assets.dart';
 import 'report_data.dart';
+import 'prepared_pdf.dart';
 
 class DocumentsState {
   DocumentsState({
@@ -45,10 +47,12 @@ class DocumentsController extends AsyncNotifier<DocumentsState> {
   Future<(List<Trip>, List<DayExtra>)> _loadYearData(int year) async {
     final first = CivilDate(year, 1, 1);
     final last = CivilDate(year, 12, 31);
-    final trips =
-        await ref.read(tripRepositoryProvider).getBetween(first, last);
-    final extras =
-        await ref.read(dayExtraRepositoryProvider).getBetween(first, last);
+    final trips = await ref
+        .read(tripRepositoryProvider)
+        .getBetween(first, last);
+    final extras = await ref
+        .read(dayExtraRepositoryProvider)
+        .getBetween(first, last);
     return (trips, extras);
   }
 
@@ -65,16 +69,14 @@ class DocumentsController extends AsyncNotifier<DocumentsState> {
   Future<void> _show(int year) async {
     _year = year;
     state = const AsyncLoading();
-    state =
-        await AsyncValue.guard(() => _load(ref.read(todayDateProvider)()));
+    state = await AsyncValue.guard(() => _load(ref.read(todayDateProvider)()));
   }
 
   Future<void> previousYear() => _show(_year! - 1);
 
   Future<void> nextYear() => _show(_year! + 1);
 
-  Future<void> goToCurrentYear() =>
-      _show(ref.read(todayDateProvider)().year);
+  Future<void> goToCurrentYear() => _show(ref.read(todayDateProvider)().year);
 
   /// Assemble le relevé — une seule passe, requêtes bornées.
   Future<AnnualReportData> buildReport() async {
@@ -92,24 +94,43 @@ class DocumentsController extends AsyncNotifier<DocumentsState> {
       vehicles: vehicles,
       vacations: vacations,
       settings: settings,
+      fiscalReference: ref
+          .read(fiscalReferenceStoreProvider)
+          .forIncomeYear(year),
     );
   }
 
-  Future<BackupSaveOutcome> createPdf() async {
+  Future<PreparedAnnualPdf> preparePdf(AnnualPdfMode mode) async {
     final report = await buildReport();
-    final bytes = await buildAnnualPdf(report);
-    return ref.read(backupFileGatewayProvider).saveFile(
-          fileName: 'MesKm-Releve-${report.year}.pdf',
-          bytes: bytes,
-          mimeType: 'application/pdf',
-        );
+    final bytes = await buildAnnualPdf(
+      report,
+      mode: mode,
+      brand: await loadPdfBrandAssets(),
+    );
+    return PreparedAnnualPdf(
+      bytes: bytes,
+      fileName: mode == AnnualPdfMode.summaryOnly
+          ? 'MesKm-Synthese-${report.year}.pdf'
+          : 'MesKm-Releve-${report.year}.pdf',
+      mode: mode,
+    );
   }
+
+  Future<BackupSaveOutcome> sharePdf(PreparedAnnualPdf document) => ref
+      .read(backupFileGatewayProvider)
+      .saveFile(
+        fileName: document.fileName,
+        bytes: document.bytes,
+        mimeType: 'application/pdf',
+      );
 
   Future<BackupSaveOutcome> createCsv() async {
     final report = await buildReport();
     // Octet-stream : leçon KM-008B — Safari prévisualise les types texte
     // et peut altérer le nom ; Fichiers/Numbers s'appuient sur l'extension.
-    return ref.read(backupFileGatewayProvider).saveFile(
+    return ref
+        .read(backupFileGatewayProvider)
+        .saveFile(
           fileName: 'MesKm-Detail-${report.year}.csv',
           bytes: utf8.encode(buildAnnualCsv(report)),
           mimeType: 'application/octet-stream',
@@ -119,5 +140,5 @@ class DocumentsController extends AsyncNotifier<DocumentsState> {
 
 final documentsControllerProvider =
     AsyncNotifierProvider<DocumentsController, DocumentsState>(
-  DocumentsController.new,
-);
+      DocumentsController.new,
+    );

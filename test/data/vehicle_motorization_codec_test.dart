@@ -123,7 +123,7 @@ void main() {
       vacationPeriods: const [],
       settings: AppSettings(),
     );
-    expect(json, contains('"schemaVersion": 3'));
+    expect(json, contains('"schemaVersion": 4'));
     final content = decodeBackup(json);
     expect(content.vehicles.first.motorization, Motorization.electric);
     expect(content.vehicles.last.twoWheelerClass,

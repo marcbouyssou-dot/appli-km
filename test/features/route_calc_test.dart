@@ -152,7 +152,7 @@ void main() {
       find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
       '25',
     );
-    await tester.tap(find.text('Ajouter'));
+    await tester.tap(find.text('Enregistrer le trajet'));
     await tester.pumpAndSettle();
 
     final trip = (await tester.runAsync(
@@ -184,7 +184,7 @@ void main() {
       '7,5',
     );
     await tester.pump(); // le bouton passe à l'état actif
-    await tester.tap(find.text('Ajouter'));
+    await tester.tap(find.text('Enregistrer le trajet'));
     await tester.pumpAndSettle();
     final trips = await tester.runAsync(
         () => SembastTripRepository(database.db).getByDate(day));

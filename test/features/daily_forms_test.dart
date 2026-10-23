@@ -59,7 +59,7 @@ void main() {
       // Essentiel immédiatement visible.
       expect(field('Distance comptabilisée (km)'), findsOneWidget);
       expect(find.text('Aller-retour'), findsOneWidget);
-      expect(find.text('Ajouter'), findsOneWidget); // action épinglée
+      expect(find.text('Enregistrer le trajet'), findsOneWidget); // action épinglée
       expect(find.text('Annuler'), findsOneWidget); // en-tête compact
 
       // Section repliée : champs facultatifs absents du rendu.
@@ -218,18 +218,18 @@ void main() {
       await tester.tap(find.text('Ajouter un trajet'));
       await tester.pumpAndSettle();
 
-      expect(enabled(tester, 'Ajouter'), isFalse,
+      expect(enabled(tester, 'Enregistrer le trajet'), isFalse,
           reason: 'jamais un bouton qui paraît actif à vide');
 
       await tester.enterText(
           field('Distance comptabilisée (km)'), '42');
       await tester.pump();
-      expect(enabled(tester, 'Ajouter'), isTrue);
+      expect(enabled(tester, 'Enregistrer le trajet'), isTrue);
 
       await tester.enterText(
           field('Distance comptabilisée (km)'), 'abc');
       await tester.pump();
-      expect(enabled(tester, 'Ajouter'), isFalse);
+      expect(enabled(tester, 'Enregistrer le trajet'), isFalse);
     });
 
     testWidgets(
@@ -292,7 +292,7 @@ void main() {
       addTearDown(tester.view.resetViewInsets);
       await tester.pumpAndSettle();
 
-      final button = find.text('Ajouter');
+      final button = find.text('Enregistrer le trajet');
       expect(button, findsOneWidget);
       final center = tester.getCenter(button);
       expect(center.dy, lessThan(700 - 300),
@@ -301,7 +301,7 @@ void main() {
       final fieldRect =
           tester.getRect(field('Distance comptabilisée (km)'));
       final actionTop =
-          tester.getTopLeft(find.text('Ajouter')).dy - 12;
+          tester.getTopLeft(find.text('Enregistrer le trajet')).dy - 12;
       expect(fieldRect.bottom, lessThan(actionTop),
           reason: 'le bouton ne recouvre jamais le champ actif');
 
@@ -321,13 +321,17 @@ void main() {
       await pumpApp(tester, size: const Size(320, 568));
       await tester.tap(find.text('Ajouter un trajet'));
       await tester.pumpAndSettle();
+      // Avec le raccourci multi-jours épinglé, les détails restent dans
+      // le corps défilant sur 320 px : amener la cible dans la zone visible.
+      await tester.ensureVisible(find.byKey(const Key('optional-section-toggle')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('optional-section-toggle')));
       await tester.pumpAndSettle();
 
       // Le corps défile au-dessus de l'action épinglée.
       await tester.ensureVisible(field('Motif'));
       await tester.pumpAndSettle();
-      expect(find.text('Ajouter'), findsOneWidget);
+      expect(find.text('Enregistrer le trajet'), findsOneWidget);
       // Aucun overflow (une exception de rendu ferait échouer le test).
     });
   });

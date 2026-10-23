@@ -1,4 +1,5 @@
 import 'text.dart';
+import 'accountant_contact.dart';
 
 /// Préférence de thème de l'application.
 enum ThemePreference { system, light, dark }
@@ -13,13 +14,14 @@ class AppSettings {
     String? documentRecipientName,
     String? documentRecipientAddress,
     String? mainVehicleId,
+    this.accountant,
     this.themePreference = ThemePreference.system,
-  })  : displayName = cleanText(displayName),
-        address = cleanText(address),
-        city = cleanText(city),
-        documentRecipientName = cleanText(documentRecipientName),
-        documentRecipientAddress = cleanText(documentRecipientAddress),
-        mainVehicleId = cleanText(mainVehicleId);
+  }) : displayName = cleanText(displayName),
+       address = cleanText(address),
+       city = cleanText(city),
+       documentRecipientName = cleanText(documentRecipientName),
+       documentRecipientAddress = cleanText(documentRecipientAddress),
+       mainVehicleId = cleanText(mainVehicleId);
 
   /// Nom ou société, tel qu'il apparaîtra sur les documents.
   final String? displayName;
@@ -34,6 +36,7 @@ class AppSettings {
   final String? mainVehicleId;
 
   final ThemePreference themePreference;
+  final AccountantContact? accountant;
 
   AppSettings copyWith({
     String? displayName,
@@ -43,6 +46,8 @@ class AppSettings {
     String? documentRecipientAddress,
     String? mainVehicleId,
     ThemePreference? themePreference,
+    AccountantContact? accountant,
+    bool clearAccountant = false,
   }) {
     return AppSettings(
       displayName: displayName ?? this.displayName,
@@ -54,6 +59,7 @@ class AppSettings {
           documentRecipientAddress ?? this.documentRecipientAddress,
       mainVehicleId: mainVehicleId ?? this.mainVehicleId,
       themePreference: themePreference ?? this.themePreference,
+      accountant: clearAccountant ? null : accountant ?? this.accountant,
     );
   }
 }

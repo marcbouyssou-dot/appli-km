@@ -87,7 +87,7 @@ void main() {
 
     await tester.tap(navLabel('Aujourd’hui'));
     await tester.pumpAndSettle();
-    expect(find.text('km aujourd’hui'), findsOneWidget);
+    expect(find.text('aujourd’hui'), findsOneWidget);
   });
 
   testWidgets('Web réel : deux taps favori => deux Trips persistés (+48)',
@@ -187,7 +187,7 @@ void main() {
     // Navigation basse après clavier.
     await tester.tap(find.byIcon(Icons.today_outlined));
     await tester.pumpAndSettle();
-    expect(find.text('km aujourd’hui'), findsOneWidget);
+    expect(find.text('aujourd’hui'), findsOneWidget);
   });
 
   testWidgets(

@@ -41,6 +41,8 @@ Future<TripFormResult?> showTripFormSheet(
   List<Vehicle> vehicles = const [],
   String? defaultVehicleId,
   RouteDistanceService? routeService,
+  String singleDayLabel = 'Jour sélectionné',
+  Future<bool> Function(BuildContext, TripFormResult)? onMultiDay,
 }) {
   return showModalBottomSheet<TripFormResult>(
     context: context,
@@ -51,6 +53,8 @@ Future<TripFormResult?> showTripFormSheet(
       vehicles: vehicles,
       defaultVehicleId: defaultVehicleId,
       routeService: routeService,
+      singleDayLabel: singleDayLabel,
+      onMultiDay: onMultiDay,
     ),
   );
 }
@@ -61,12 +65,16 @@ class _TripFormSheet extends StatefulWidget {
     this.vehicles = const [],
     this.defaultVehicleId,
     this.routeService,
+    required this.singleDayLabel,
+    this.onMultiDay,
   });
 
   final Trip? initial;
   final List<Vehicle> vehicles;
   final String? defaultVehicleId;
   final RouteDistanceService? routeService;
+  final String singleDayLabel;
+  final Future<bool> Function(BuildContext, TripFormResult)? onMultiDay;
 
   @override
   State<_TripFormSheet> createState() => _TripFormSheetState();
@@ -80,6 +88,8 @@ class _TripFormSheetState extends State<_TripFormSheet> {
   late bool _isRoundTrip;
   String? _vehicleId;
   String? _distanceError;
+  bool _choosingDays = false;
+  bool _multipleDays = false;
 
   @override
   void initState() {
@@ -87,16 +97,16 @@ class _TripFormSheetState extends State<_TripFormSheet> {
     final initial = widget.initial;
     // Garde UX précoce (UX-003B1) : l'état du bouton suit la saisie.
     _distanceListener = () => setState(() {});
-    _vehicleId =
-        initial != null ? initial.vehicleId : widget.defaultVehicleId;
+    _vehicleId = initial != null ? initial.vehicleId : widget.defaultVehicleId;
     _distanceController = TextEditingController(
       text: initial == null
           ? ''
           : formatKm(initial.distanceKm).replaceAll(' km', ''),
     );
     _originController = TextEditingController(text: initial?.origin ?? '');
-    _destinationController =
-        TextEditingController(text: initial?.destination ?? '');
+    _destinationController = TextEditingController(
+      text: initial?.destination ?? '',
+    );
     _purposeController = TextEditingController(text: initial?.purpose ?? '');
     _isRoundTrip = initial?.isRoundTrip ?? false;
     _distanceController.addListener(_distanceListener);
@@ -120,23 +130,51 @@ class _TripFormSheetState extends State<_TripFormSheet> {
     super.dispose();
   }
 
-  void _submit() {
+  TripFormResult? _values() {
     final distance = parseKmInput(_distanceController.text);
     if (distance == null || distance <= 0) {
       setState(() {
         _distanceError = 'Saisissez une distance en kilomètres (> 0).';
       });
-      return;
+      return null;
     }
 
-    Navigator.of(context).pop(TripFormResult(
+    return TripFormResult(
       distanceKm: distance,
       isRoundTrip: _isRoundTrip,
       origin: _originController.text,
       destination: _destinationController.text,
       purpose: _purposeController.text,
       vehicleId: _vehicleId,
-    ));
+    );
+  }
+
+  void _submit() {
+    final values = _values();
+    if (values != null) Navigator.of(context).pop(values);
+  }
+
+  Future<void> _multiDay() async {
+    final values = _values();
+    if (values == null || _choosingDays) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _choosingDays = true);
+    try {
+      final added = await widget.onMultiDay!(context, values);
+      if (!mounted) return;
+      setState(() => _choosingDays = false);
+      // null ferme la saisie sans déclencher l'ajout journalier de l'appelant.
+      if (added) Navigator.of(context).pop();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _choosingDays = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible d’ouvrir les jours. Réessayez.'),
+          ),
+        );
+      }
+    }
   }
 
   /// La section facultative s'ouvre d'elle-même en édition quand elle
@@ -157,19 +195,69 @@ class _TripFormSheetState extends State<_TripFormSheet> {
     // reste dans « Itinéraire et détails », action principale épinglée.
     return FormSheetScaffold(
       title: isEditing ? 'Modifier le trajet' : 'Ajouter un trajet',
-      primaryLabel: isEditing ? 'Enregistrer' : 'Ajouter',
-      onPrimary: _canSubmit ? _submit : null,
+      primaryLabel: isEditing ? 'Enregistrer' : 'Enregistrer le trajet',
+      onPrimary: _canSubmit && !_choosingDays
+          ? (_multipleDays ? _multiDay : _submit)
+          : null,
+      beforePrimary: !isEditing && widget.onMultiDay != null
+          ? RadioGroup<bool>(
+              groupValue: _multipleDays,
+              onChanged: (value) {
+                if (!_choosingDays && value != null) {
+                  setState(() => _multipleDays = value);
+                }
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Quand effectuer ce trajet ?',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                  for (final (value, label, key) in [
+                    (false, widget.singleDayLabel, 'new-trip-single-day'),
+                    (true, 'Choisir plusieurs jours…', 'new-trip-multi-day'),
+                  ])
+                    InkWell(
+                      key: Key(key),
+                      onTap: _choosingDays
+                          ? null
+                          : () => setState(() => _multipleDays = value),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 40,
+                              child: Radio<bool>(
+                                value: value,
+                                enabled: !_choosingDays,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                label,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.s),
+                ],
+              ),
+            )
+          : null,
       children: [
         TextField(
           controller: _distanceController,
           autofocus: !isEditing,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           textInputAction: TextInputAction.done,
           decoration: InputDecoration(
             labelText: 'Distance comptabilisée (km)',
-            helperText:
-                'Distance totale réellement parcourue, A/R inclus.',
+            helperText: 'Distance totale réellement parcourue, A/R inclus.',
             helperMaxLines: 2,
             suffixText: 'km',
             border: const OutlineInputBorder(),
@@ -183,11 +271,13 @@ class _TripFormSheetState extends State<_TripFormSheet> {
           title: const Text('Aller-retour'),
           // Une distance déjà saisie n'est jamais doublée
           // automatiquement ; seul le calcul d'itinéraire en tient compte.
-          subtitle: Text(_isRoundTrip
-              ? 'Le calcul d\u2019itinéraire proposera la distance '
-                  'aller-retour.'
-              : 'Le calcul d\u2019itinéraire proposera la distance '
-                  'aller.'),
+          subtitle: Text(
+            _isRoundTrip
+                ? 'Le calcul d\u2019itinéraire proposera la distance '
+                      'aller-retour.'
+                : 'Le calcul d\u2019itinéraire proposera la distance '
+                      'aller.',
+          ),
           contentPadding: EdgeInsets.zero,
         ),
         const SizedBox(height: AppSpacing.s),
@@ -258,9 +348,11 @@ class _TripFormSheetState extends State<_TripFormSheet> {
               for (final vehicle in widget.vehicles)
                 DropdownMenuItem<String?>(
                   value: vehicle.id,
-                  child: Text(vehicle.isArchived
-                      ? '${vehicle.name} (archivé)'
-                      : vehicle.name),
+                  child: Text(
+                    vehicle.isArchived
+                        ? '${vehicle.name} (archivé)'
+                        : vehicle.name,
+                  ),
                 ),
             ],
             onChanged: (value) => setState(() => _vehicleId = value),

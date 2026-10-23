@@ -52,7 +52,10 @@ self.addEventListener('fetch', (event) => {
 
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req).catch(() => caches.match('/', { cacheName: CACHE_NAME }))
+      fetch(req).catch(async () =>
+        (await caches.match(req, { cacheName: CACHE_NAME, ignoreSearch: true })) ||
+        caches.match('/', { cacheName: CACHE_NAME })
+      )
     );
     return;
   }

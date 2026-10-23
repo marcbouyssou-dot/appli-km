@@ -23,6 +23,7 @@ class FormSheetScaffold extends StatelessWidget {
     required this.onPrimary,
     this.cancelLabel = 'Annuler',
     this.primaryKey,
+    this.beforePrimary,
   });
 
   final String title;
@@ -40,6 +41,9 @@ class FormSheetScaffold extends StatelessWidget {
   /// Clé posée sur le bouton principal (compatibilité des tests).
   final Key? primaryKey;
 
+  /// Choix contextuel optionnel, épinglé juste avant l’action principale.
+  final Widget? beforePrimary;
+
   /// Libellé de l'action d'en-tête (« Fermer » pour une feuille qui liste
   /// aussi des éléments déjà enregistrés, comme les congés).
   final String cancelLabel;
@@ -50,6 +54,9 @@ class FormSheetScaffold extends StatelessWidget {
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
     final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.92;
+    // Sur les écrans les plus courts avec clavier, laisser défiler le choix
+    // avec les champs : le bouton reste épinglé, sans réduire les cibles.
+    final scrollChoice = MediaQuery.sizeOf(context).height - viewInsets < 400;
 
     return Padding(
       padding: EdgeInsets.only(bottom: viewInsets),
@@ -74,8 +81,7 @@ class FormSheetScaffold extends StatelessWidget {
                         Text(title, style: theme.textTheme.titleLarge),
                         if (help != null)
                           Padding(
-                            padding:
-                                const EdgeInsets.only(top: AppSpacing.xs),
+                            padding: const EdgeInsets.only(top: AppSpacing.xs),
                             child: Text(
                               help!,
                               style: AppTypography.caption.copyWith(
@@ -97,13 +103,14 @@ class FormSheetScaffold extends StatelessWidget {
             const SizedBox(height: AppSpacing.s),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: children,
+                  children: [
+                    ...children,
+                    if (scrollChoice && beforePrimary != null) beforePrimary!,
+                  ],
                 ),
               ),
             ),
@@ -123,10 +130,17 @@ class FormSheetScaffold extends StatelessWidget {
                   top: BorderSide(color: theme.colorScheme.outlineVariant),
                 ),
               ),
-              child: PrimaryButton(
-                key: primaryKey,
-                label: primaryLabel,
-                onPressed: onPrimary,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (!scrollChoice && beforePrimary != null) beforePrimary!,
+                  PrimaryButton(
+                    key: primaryKey,
+                    label: primaryLabel,
+                    onPressed: onPrimary,
+                  ),
+                ],
               ),
             ),
           ],
@@ -172,8 +186,9 @@ class _FormOptionalSectionState extends State<FormOptionalSection> {
           onTap: () => setState(() => _expanded = !_expanded),
           borderRadius: BorderRadius.circular(AppRadius.s),
           child: ConstrainedBox(
-            constraints:
-                const BoxConstraints(minHeight: AppSizes.minTouchTarget),
+            constraints: const BoxConstraints(
+              minHeight: AppSizes.minTouchTarget,
+            ),
             child: Row(
               children: [
                 Icon(

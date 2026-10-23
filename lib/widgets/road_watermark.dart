@@ -30,15 +30,13 @@ class MesKmRoadWatermark extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
-    // Teinte bleu/turquoise, extrêmement faible ; encore plus en sombre.
-    // Adouci après recette iPhone (UX-001D final polish) : perceptible
-    // quand on le cherche, jamais en concurrence avec le contenu.
+    // KM-UX-005 : présence intermédiaire, même composition de route.
+    // Les écrans denses conservent la variante haute pour dégager les chiffres.
     final ink = Color.lerp(
       theme.colorScheme.primary,
       theme.mesKm.mobility,
       0.55,
-    )!
-        .withValues(alpha: dark ? 0.03 : 0.04);
+    )!.withValues(alpha: dark ? 0.05 : 0.07);
 
     return Stack(
       children: [
@@ -47,7 +45,7 @@ class MesKmRoadWatermark extends StatelessWidget {
             child: IgnorePointer(
               child: RepaintBoundary(
                 child: CustomPaint(
-                  painter: _RoadPainter(ink: ink, variant: variant),
+                  painter: _RoadPainter(ink: ink, variant: variant, dark: dark),
                 ),
               ),
             ),
@@ -63,9 +61,14 @@ class MesKmRoadWatermark extends StatelessWidget {
 /// voiture, aucun texte, aucun motif répété en wallpaper : une composition
 /// verticale unique avec de grandes zones vides.
 class _RoadPainter extends CustomPainter {
-  const _RoadPainter({required this.ink, required this.variant});
+  const _RoadPainter({
+    required this.ink,
+    required this.variant,
+    required this.dark,
+  });
 
   final Color ink;
+  final bool dark;
   final RoadWatermarkVariant variant;
 
   @override
@@ -96,6 +99,16 @@ class _RoadPainter extends CustomPainter {
 
     _tree(canvas, Offset(w * 0.82, h * 0.195), w * 0.034);
     _tree(canvas, Offset(w * 0.16, h * 0.175), w * 0.026);
+    // Un seul repère chaud, à l'échelle d'une borne, jamais un aplat.
+    final marker = Paint()
+      ..color = const Color(0xffa76d71).withValues(alpha: dark ? .04 : .055)
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(w * .59, h * .17),
+      Offset(w * .59, h * .17 - 6),
+      marker,
+    );
 
     if (variant == RoadWatermarkVariant.full) {
       // Seconde courbe, encore plus légère, dans le bas de page.
@@ -126,7 +139,14 @@ class _RoadPainter extends CustomPainter {
 
   /// Arbre stylisé : un disque sur un petit tronc. Rien de réaliste.
   void _tree(Canvas canvas, Offset base, double radius) {
-    final fill = Paint()..color = ink;
+    // Accents de marque désaturés, limités au feuillage et à un minuscule
+    // repère de route. La géométrie et l'opacité de la route restent identiques.
+    final green = Color.lerp(
+      ink.withValues(alpha: 1),
+      const Color(0xff53806a),
+      .5,
+    )!.withValues(alpha: dark ? .045 : .06);
+    final fill = Paint()..color = green;
     canvas.drawLine(
       base,
       base.translate(0, -radius * 1.6),
@@ -140,5 +160,7 @@ class _RoadPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RoadPainter oldDelegate) =>
-      oldDelegate.ink != ink || oldDelegate.variant != variant;
+      oldDelegate.ink != ink ||
+      oldDelegate.variant != variant ||
+      oldDelegate.dark != dark;
 }

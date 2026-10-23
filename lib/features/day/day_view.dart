@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
+import '../../data/local/trip_batch_service.dart';
+import '../../domain/models/trip_template.dart';
 import '../../domain/logic/vacations.dart';
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/trip.dart';
@@ -19,6 +22,7 @@ import '../vehicles/vehicles_controller.dart';
 import 'day_controller.dart';
 import 'editable_day_total.dart';
 import 'trip_form_sheet.dart';
+import 'trip_days_screen.dart';
 
 /// Vue complète d'une journée (aujourd'hui ou passée) :
 /// compteur éditable, ajout/édition/suppression de trajets, décomposition,
@@ -44,7 +48,7 @@ class DayView extends ConsumerWidget {
 
     final vacations =
         ref.watch(vacationsControllerProvider).value ??
-            const <VacationPeriod>[];
+        const <VacationPeriod>[];
 
     return state.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -130,9 +134,7 @@ class _DayContent extends ConsumerWidget {
   }
 
   Future<void> _addTrip(BuildContext context, WidgetRef ref) async {
-    // Jamais congé + kilomètres : confirmation puis retrait du jour.
-    if (!await ensureDayNotVacation(context, ref, day.date)) return;
-    if (!context.mounted) return;
+    // Aucun congé n'est touché à l'ouverture : la saisie peut cibler d'autres jours.
     final vehicles = ref.read(vehiclesControllerProvider).value;
     final result = await showTripFormSheet(
       context,
@@ -140,8 +142,17 @@ class _DayContent extends ConsumerWidget {
       routeService: ref.read(routeDistanceServiceProvider),
       // Pré-sélection : véhicule principal ACTUEL (figé dans le Trip).
       defaultVehicleId: vehicles?.mainVehicleId,
+      singleDayLabel: day.date == ref.read(todayDateProvider)()
+          ? 'Aujourd’hui'
+          : DateFormat(
+              'EEEE d MMMM yyyy',
+              'fr_FR',
+            ).format(day.date.toDateTime()),
+      onMultiDay: _newTripDays,
     );
-    if (result == null) return;
+    if (result == null || !context.mounted) return;
+    // Le parcours simple conserve sa confirmation explicite sur une journée en congé.
+    if (!await ensureDayNotVacation(context, ref, day.date)) return;
     await _controller(ref).addTrip(
       distanceKm: result.distanceKm,
       isRoundTrip: result.isRoundTrip,
@@ -152,11 +163,7 @@ class _DayContent extends ConsumerWidget {
     );
   }
 
-  Future<void> _editTrip(
-    BuildContext context,
-    WidgetRef ref,
-    Trip trip,
-  ) async {
+  Future<void> _editTrip(BuildContext context, WidgetRef ref, Trip trip) async {
     final vehicles = ref.read(vehiclesControllerProvider).value;
     final result = await showTripFormSheet(
       context,
@@ -175,6 +182,44 @@ class _DayContent extends ConsumerWidget {
       vehicleId: result.vehicleId,
     );
   }
+
+  Future<bool> _newTripDays(BuildContext context, TripFormResult values) async {
+    final template = TripTemplate(
+      distanceKm: values.distanceKm,
+      isRoundTrip: values.isRoundTrip,
+      origin: values.origin,
+      destination: values.destination,
+      purpose: values.purpose,
+      vehicleId: values.vehicleId,
+    );
+    return await Navigator.of(context).push<bool>(
+          MaterialPageRoute<bool>(
+            builder: (_) => TripDaysScreen(
+              source: TripBatchSource.draft(template),
+              template: template,
+              label: 'Nouveau trajet',
+              initialDate: day.date,
+              preselectDate: true,
+            ),
+          ),
+        ) ==
+        true;
+  }
+
+  Future<void> _copyTrip(
+    BuildContext context,
+    Trip trip,
+  ) => Navigator.of(context).push<bool>(
+    MaterialPageRoute<bool>(
+      builder: (_) => TripDaysScreen(
+        source: TripBatchSource.existingTrip(trip.id),
+        template: TripTemplate.fromTrip(trip),
+        label:
+            'Trajet du ${trip.date.day.toString().padLeft(2, '0')}/${trip.date.month.toString().padLeft(2, '0')}/${trip.date.year}',
+        initialDate: trip.date,
+      ),
+    ),
+  );
 
   /// Correction explicite du véhicule des kilomètres non détaillés :
   /// uniquement l'attribution, jamais le kilométrage.
@@ -205,11 +250,12 @@ class _DayContent extends ConsumerWidget {
               onPressed: () =>
                   Navigator.of(context).pop(_VehicleChoice(vehicle.id)),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: AppSpacing.m),
-                child: Text(vehicle.isArchived
-                    ? '${vehicle.name} (archivé)'
-                    : vehicle.name),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
+                child: Text(
+                  vehicle.isArchived
+                      ? '${vehicle.name} (archivé)'
+                      : vehicle.name,
+                ),
               ),
             ),
         ],
@@ -395,7 +441,10 @@ class _DayContent extends ConsumerWidget {
                 colors: [
                   theme.colorScheme.primary,
                   Color.lerp(
-                      theme.colorScheme.primary, theme.mesKm.mobility, 0.45)!,
+                    theme.colorScheme.primary,
+                    theme.mesKm.mobility,
+                    0.45,
+                  )!,
                 ],
               ),
               borderRadius: BorderRadius.circular(AppRadius.m),
@@ -409,8 +458,11 @@ class _DayContent extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.add,
-                        size: 22, color: theme.colorScheme.onPrimary),
+                    Icon(
+                      Icons.add,
+                      size: 22,
+                      color: theme.colorScheme.onPrimary,
+                    ),
                     const SizedBox(width: AppSpacing.s),
                     Flexible(
                       child: Text(
@@ -436,43 +488,58 @@ class _DayContent extends ConsumerWidget {
           // Hiérarchie secondaire (UX-001B) : filets fins, pas de carte.
           Column(
             children: [
-                for (final trip in day.trips)
-                  ListTile(
-                    onTap: () => _editTrip(context, ref, trip),
-                    contentPadding: EdgeInsets.zero,
-                    shape: Border(
-                      bottom: BorderSide(
-                        color: theme.colorScheme.outlineVariant,
+              for (final trip in day.trips) ...[
+                ListTile(
+                  onTap: () => _editTrip(context, ref, trip),
+                  contentPadding: EdgeInsets.zero,
+                  minTileHeight: AppSizes.minTouchTarget + 8,
+                  title: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: AppSpacing.s,
+                    children: [
+                      Text(
+                        formatKm(trip.distanceKm),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    minTileHeight: AppSizes.minTouchTarget + 8,
-                    title: Row(
-                      children: [
+                      if (trip.isRoundTrip) ...[
+                        const SizedBox(width: AppSpacing.s),
                         Text(
-                          formatKm(trip.distanceKm),
-                          style: theme.textTheme.titleMedium?.copyWith(
+                          'A/R',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (trip.isRoundTrip) ...[
-                          const SizedBox(width: AppSpacing.s),
-                          Text(
-                            'A/R',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
                       ],
-                    ),
-                    subtitle: _tripSubtitle(trip, vehicleName),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Supprimer',
-                      onPressed: () => _deleteTrip(context, ref, trip),
-                    ),
+                    ],
                   ),
+                  subtitle: _tripSubtitle(trip, vehicleName),
+                  trailing: IconButton(
+                    key: Key('delete-trip-${trip.id}'),
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: 'Supprimer',
+                    onPressed: () => _deleteTrip(context, ref, trip),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    key: Key('report-trip-${trip.id}'),
+                    onPressed: () => _copyTrip(context, trip),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, AppSizes.minTouchTarget),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s,
+                      ),
+                    ),
+                    icon: const Icon(Icons.date_range_outlined, size: 18),
+                    label: const Text('Reporter sur d’autres jours'),
+                  ),
+                ),
+                Divider(height: 1, color: theme.colorScheme.outlineVariant),
+              ],
             ],
           ),
           const SizedBox(height: AppSpacing.m),
@@ -487,9 +554,7 @@ class _DayContent extends ConsumerWidget {
             onTap: () => _editExtraVehicle(context, ref),
             contentPadding: EdgeInsets.zero,
             shape: Border(
-              bottom: BorderSide(
-                color: theme.colorScheme.outlineVariant,
-              ),
+              bottom: BorderSide(color: theme.colorScheme.outlineVariant),
             ),
             minTileHeight: AppSizes.minTouchTarget + 8,
             leading: Icon(

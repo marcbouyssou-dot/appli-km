@@ -14,7 +14,8 @@ import '../local/codecs.dart';
 /// Version du FORMAT de sauvegarde — indépendante du schéma de la base.
 /// v2 (KM-009) : DayExtra porte une attribution véhicule figée (vehicleId?).
 /// v3 (KM-013) : Vehicle porte motorization et twoWheelerClass (optionnels).
-const int backupSchemaVersion = 3;
+// v4 (KM-UX-005) : coordonnées optionnelles du cabinet dans settings.
+const int backupSchemaVersion = 4;
 
 /// Version applicative embarquée dans l'enveloppe (information).
 const String backupAppVersion = '1.0.0';
@@ -49,6 +50,8 @@ final Map<int, Map<String, Object?> Function(Map<String, Object?>)>
   // Champs absents = motorisation NON RENSEIGNÉE / classe inconnue —
   // jamais de motorisation supposée pour un véhicule migré.
   3: (envelope) => envelope,
+  // v3 -> v4 : absence = aucun cabinet ; aucune valeur inventée.
+  4: (envelope) => envelope,
 };
 
 /// Contenu VALIDÉ d'une sauvegarde : modèles domaine reconstruits

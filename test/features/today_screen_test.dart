@@ -105,7 +105,7 @@ void main() {
     await pumpApp(tester);
 
     expectTotal(tester, '69'); // grande valeur éditable
-    expect(find.text('km aujourd’hui'), findsOneWidget);
+    expect(find.text('aujourd’hui'), findsOneWidget);
   });
 
   testWidgets('toucher la grande valeur ouvre l’édition (clavier)',
@@ -329,7 +329,7 @@ void main() {
       '24,5',
     );
     await tester.pump(); // bouton actif (UX-003B1)
-    await tester.tap(find.text('Ajouter'));
+    await tester.tap(find.text('Enregistrer le trajet'));
     await tester.pumpAndSettle();
 
     expect(find.text('Trajets détaillés'), findsOneWidget);
@@ -870,7 +870,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Renault Clio').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Ajouter'));
+      await tester.tap(find.text('Enregistrer le trajet'));
       await tester.pumpAndSettle();
 
       // Ligne du trajet : véhicule affiché discrètement.

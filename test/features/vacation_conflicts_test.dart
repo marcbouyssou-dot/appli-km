@@ -116,30 +116,31 @@ void main() {
     await seedPeriod(tester, today, today);
     await pumpApp(tester);
 
-    // Annulation.
-    await tester.tap(find.text('Ajouter un trajet'));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('Cette journée est marquée comme congé.'),
-      findsOneWidget,
-    );
-    await tester.tap(find.text('Annuler'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('vacation-card')), findsOneWidget);
-    expect(await storedPeriods(tester), hasLength(2));
-
-    // Confirmation puis saisie du trajet.
-    await tester.tap(find.text('Ajouter un trajet'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Retirer le congé et continuer'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
-      '24',
-    );
-    await tester.pump(); // bouton actif (UX-003B1)
-    await tester.tap(find.text('Ajouter'));
-    await tester.pumpAndSettle();
+    // La saisie n'altère pas le congé : la confirmation vient à l'ajout simple.
+    for (final confirm in [false, true]) {
+      await tester.tap(find.text('Ajouter un trajet'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cette journée est marquée comme congé.'), findsNothing);
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Distance comptabilisée (km)'),
+        '24',
+      );
+      await tester.pump();
+      await tester.tap(find.text('Enregistrer le trajet'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Cette journée est marquée comme congé.'),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.text(confirm ? 'Retirer le congé et continuer' : 'Annuler'),
+      );
+      await tester.pumpAndSettle();
+      if (!confirm) {
+        expect(find.byKey(const Key('vacation-card')), findsOneWidget);
+        expect(await storedPeriods(tester), hasLength(2));
+      }
+    }
 
     expect(find.byKey(const Key('vacation-card')), findsNothing);
     expect(find.text('24 km'), findsOneWidget);

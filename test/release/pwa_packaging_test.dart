@@ -122,7 +122,15 @@ void main() {
       expect(h, contains('_flutter.loader.load();'));
       expect(h, contains("serviceWorker.register('sw.js')"));
       expect(h, contains('flutter-first-frame'));
-      expect(h, contains('splash-pulse'));
+      expect(h, contains('splash-domain'));
+      expect(h, contains('prefers-reduced-motion: reduce'));
+      expect(h, contains("matches ? 0 : 2100"));
+      expect(h, contains('splash-domain 2.1s'));
+      expect(h, contains('Math.max(0, splashMinimum -'));
+      expect(h, contains('animation: none'));
+      expect(h, contains('splashMinimum'));
+      expect(h, contains('icons/Icon-512.png'));
+      expect(h, contains('MesKm.fr'));
       expect(h, isNot(contains('position: fixed;\n      body')));
     });
   });

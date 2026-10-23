@@ -56,35 +56,83 @@
     }
     #splash {
       position: fixed;
+      z-index: 1000;
       inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      background-color: #FBFCFE;
+      color: #1D5BD8;
       font-family: -apple-system, system-ui, sans-serif;
-      font-size: 22px;
-      font-weight: 700;
-      color: #1D5BD8; /* bleu Mes Km (UX-001C) */
-      /* Pulsation : l'état de chargement VIVANT est reconnaissable,
-         jamais une interface qui semble prête mais morte. */
-      animation: splash-pulse 1.2s ease-in-out infinite;
     }
-    @keyframes splash-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+    .splash-watermark {
+      position: absolute;
+      width: min(155vw, 850px);
+      opacity: .075;
+      transform: rotate(-12deg);
+      pointer-events: none;
+    }
+    .splash-mark {
+      position: relative;
+      display: grid;
+      justify-items: center;
+      gap: 14px;
+      text-align: center;
+      padding: 24px;
+    }
+    .splash-mark img { border-radius: 24px; }
+    .splash-mark strong { font-size: 28px; letter-spacing: -.7px; }
+    .splash-mark small { color: #556273; font-size: 13px; }
+    .splash-domain {
+      position: absolute;
+      top: 50%; left: 50%;
+      font-size: 18px; font-weight: 600; letter-spacing: .3px;
+      opacity: 0;
+      animation: splash-domain 2.1s ease-in-out infinite;
+    }
+    @keyframes splash-domain {
+      0%, 28% { transform: translate(calc(-50% - 65px), -155px); opacity: 0; }
+      12%, 20% { transform: translate(calc(-50% - 65px), -155px); opacity: .85; }
+      33%, 61% { transform: translate(calc(-50% + 60px), 130px); opacity: 0; }
+      43%, 53% { transform: translate(calc(-50% + 60px), 130px); opacity: .85; }
+      66%, 100% { transform: translate(calc(-50% - 35px), 165px); opacity: 0; }
+      77%, 88% { transform: translate(calc(-50% - 35px), 165px); opacity: .85; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .splash-domain { animation: none; opacity: 1; transform: translate(-50%, 135px); }
+      .splash-watermark { transform: none; }
     }
     @media (prefers-color-scheme: dark) {
-      html, body { background-color: #111318; }
+      html, body, #splash { background-color: #111318; }
+      #splash { color: #95B9FF; }
+      .splash-mark small { color: #B7C2D2; }
+      .splash-watermark { opacity: .045; }
     }
   </style>
 </head>
 <body>
-  <div id="splash">Mes Km</div>
+  <div id="splash" role="status" aria-label="Chargement de Mes Km">
+    <img class="splash-watermark" src="icons/Icon-512.png" alt="" aria-hidden="true">
+    <div class="splash-mark">
+      <img src="icons/Icon-192.png" width="104" height="104" alt="">
+      <strong>Mes Km</strong>
+      <small>Vos kilomètres professionnels, simplement.</small>
+    </div>
+    <span class="splash-domain" aria-hidden="true">MesKm.fr</span>
+  </div>
   <script>
-    // Retire le fond de chargement dès que Flutter a rendu sa première frame.
+    // Un seul splash HTML : Flutter démarre immédiatement derrière.
+    // Au-delà du minimum, la première frame retire le splash sans délai ajouté.
+    var splashStarted = performance.now();
+    var splashMinimum = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 2100;
     window.addEventListener('flutter-first-frame', function () {
-      var splash = document.getElementById('splash');
-      if (splash) { splash.remove(); }
-    });
+      var remaining = Math.max(0, splashMinimum - (performance.now() - splashStarted));
+      var dismiss = function () {
+        var splash = document.getElementById('splash');
+        if (splash) splash.remove();
+      };
+      if (remaining === 0) dismiss(); else window.setTimeout(dismiss, remaining);
+    }, { once: true });
 
     // Épinglage de scroll : quand le clavier iOS s'ouvre, Safari peut faire
     // défiler la page hôte (scroll-into-view) et le décalage peut persister

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; worker-src 'self' blob:; style-src 'self'; font-src blob:; img-src blob: data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Aperçu PDF — Mes Km</title>
+  <link rel="stylesheet" href="viewer.css">
+  <script type="module" src="viewer.mjs"></script>
+</head>
+<body>
+  <nav aria-label="Pages et zoom du PDF">
+    <button id="previous" aria-label="Page précédente" disabled>‹</button>
+    <span id="page-number" aria-live="polite">Chargement…</span>
+    <button id="next" aria-label="Page suivante" disabled>›</button>
+    <button id="zoom-out" aria-label="Réduire le zoom" disabled>−</button>
+    <button id="zoom-in" aria-label="Agrandir le zoom" disabled>+</button>
+  </nav>
+  <p id="status" role="status">Préparation de l’aperçu…</p>
+  <main id="viewport" tabindex="0" aria-label="Document PDF. Utilisez les boutons pour parcourir ou agrandir les pages.">
+    <canvas id="page" role="img" aria-label="Page du PDF" hidden></canvas>
+  </main>
+</body>
+</html>

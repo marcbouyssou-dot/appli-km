@@ -29,6 +29,8 @@ void main() {
       todayDateProvider.overrideWithValue(() => today),
     ]);
     addTearDown(container.dispose);
+    // Comme DayView, attendre l'état initial avant de déclencher les mutations.
+    await container.read(dayControllerProvider(pastDay).future);
   });
 
   tearDown(() => database.close());

@@ -1,5 +1,8 @@
 import '../../domain/logic/statistics.dart';
 import '../../domain/models/app_settings.dart';
+import '../../domain/models/accountant_contact.dart';
+import '../../domain/models/fiscal_reference.dart';
+import '../../domain/logic/fiscal_estimator.dart';
 import '../../domain/models/civil_date.dart';
 import '../../domain/models/day_extra.dart';
 import '../../domain/models/km.dart';
@@ -69,6 +72,10 @@ class AnnualReportData {
     required this.vehicles,
     required this.vacationPeriods,
     required this.lines,
+    this.accountant,
+    this.fiscalReferenceYear,
+    this.fiscalEstimates = const [],
+    this.fiscalIsPartial = false,
   });
 
   final int year;
@@ -76,6 +83,10 @@ class AnnualReportData {
   final String? displayName;
   final String? address;
   final String? city;
+  final AccountantContact? accountant;
+  final int? fiscalReferenceYear;
+  final List<(String, double)> fiscalEstimates;
+  final bool fiscalIsPartial;
   final double totalKm;
   final List<double> monthlyTotals; // index 0 = janvier
   final int activeDays;
@@ -101,6 +112,7 @@ AnnualReportData buildAnnualReportData({
   required List<Vehicle> vehicles,
   required List<VacationPeriod> vacations,
   required AppSettings settings,
+  FiscalReference? fiscalReference,
 }) {
   Vehicle? vehicleById(String? id) {
     if (id == null) return null;
@@ -123,15 +135,17 @@ AnnualReportData buildAnnualReportData({
   for (final entry in byVehicle.entries) {
     if (entry.value <= 0) continue;
     final vehicle = vehicleById(entry.key);
-    reportVehicles.add(ReportVehicle(
-      vehicleId: entry.key,
-      label: entry.key == null
-          ? 'Sans véhicule renseigné'
-          : vehicle?.name ?? 'Véhicule inconnu',
-      registration: vehicle?.registration,
-      fiscalPowerCv: vehicle?.fiscalPowerCv,
-      totalKm: entry.value,
-    ));
+    reportVehicles.add(
+      ReportVehicle(
+        vehicleId: entry.key,
+        label: entry.key == null
+            ? 'Sans véhicule renseigné'
+            : vehicle?.name ?? 'Véhicule inconnu',
+        registration: vehicle?.registration,
+        fiscalPowerCv: vehicle?.fiscalPowerCv,
+        totalKm: entry.value,
+      ),
+    );
   }
   reportVehicles.sort((a, b) {
     if (a.vehicleId == null) return 1;
@@ -144,8 +158,9 @@ AnnualReportData buildAnnualReportData({
   final lastDay = CivilDate(year, 12, 31);
   final clippedVacations = <(CivilDate, CivilDate)>[];
   for (final period in vacations) {
-    final start =
-        period.startDate.isBefore(firstDay) ? firstDay : period.startDate;
+    final start = period.startDate.isBefore(firstDay)
+        ? firstDay
+        : period.startDate;
     final end = period.endDate.isAfter(lastDay) ? lastDay : period.endDate;
     if (!start.isAfter(end)) clippedVacations.add((start, end));
   }
@@ -158,8 +173,7 @@ AnnualReportData buildAnnualReportData({
     tripsByDate.putIfAbsent(trip.date, () => []).add(trip);
   }
   final extraByDate = {for (final e in extras) e.date: e};
-  final allDates = {...tripsByDate.keys, ...extraByDate.keys}.toList()
-    ..sort();
+  final allDates = {...tripsByDate.keys, ...extraByDate.keys}.toList()..sort();
 
   final lines = <ReportLine>[];
   for (final date in allDates) {
@@ -167,45 +181,67 @@ AnnualReportData buildAnnualReportData({
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     for (final trip in dayTrips) {
       final vehicle = vehicleById(trip.vehicleId);
-      lines.add(ReportLine(
-        date: trip.date,
-        isDetailedTrip: true,
-        km: trip.distanceKm,
-        origin: trip.origin,
-        destination: trip.destination,
-        purpose: trip.purpose,
-        isRoundTrip: trip.isRoundTrip,
-        vehicleLabel: vehicleLabel(trip.vehicleId),
-        registration: vehicle?.registration ?? '',
-      ));
+      lines.add(
+        ReportLine(
+          date: trip.date,
+          isDetailedTrip: true,
+          km: trip.distanceKm,
+          origin: trip.origin,
+          destination: trip.destination,
+          purpose: trip.purpose,
+          isRoundTrip: trip.isRoundTrip,
+          vehicleLabel: vehicleLabel(trip.vehicleId),
+          registration: vehicle?.registration ?? '',
+        ),
+      );
     }
     final extra = extraByDate[date];
     if (extra != null) {
       final vehicle = vehicleById(extra.vehicleId);
-      lines.add(ReportLine(
-        date: extra.date,
-        isDetailedTrip: false,
-        km: extra.extraKm,
-        vehicleLabel: vehicleLabel(extra.vehicleId),
-        registration: vehicle?.registration ?? '',
-      ));
+      lines.add(
+        ReportLine(
+          date: extra.date,
+          isDetailedTrip: false,
+          km: extra.extraKm,
+          vehicleLabel: vehicleLabel(extra.vehicleId),
+          registration: vehicle?.registration ?? '',
+        ),
+      );
     }
   }
 
+  final estimates = <(String, double)>[];
+  if (fiscalReference?.incomeYear == year) {
+    for (final item in reportVehicles) {
+      final vehicle = vehicleById(item.vehicleId);
+      if (vehicle == null) continue;
+      final estimate = estimateVehicleFiscal(
+        vehicle: vehicle,
+        annualKm: item.totalKm,
+        reference: fiscalReference!,
+      );
+      if (estimate is FiscalEstimateAvailable) {
+        estimates.add((item.label, estimate.amountEur));
+      }
+    }
+  }
   return AnnualReportData(
     year: year,
     generatedAt: generatedAt,
     displayName: settings.displayName,
     address: settings.address,
     city: settings.city,
+    accountant: settings.accountant,
+    fiscalReferenceYear: fiscalReference?.incomeYear == year ? year : null,
+    fiscalEstimates: estimates,
+    fiscalIsPartial: estimates.length < reportVehicles.length,
     totalKm: totalForYear(year, trips: trips, extras: extras),
     monthlyTotals: [
       for (var m = 1; m <= 12; m++)
         totalForMonth(year, m, trips: trips, extras: extras),
     ],
     activeDays: activeDayCount(trips: trips, extras: extras),
-    averagePerActiveDay:
-        averageKmPerActiveDay(trips: trips, extras: extras),
+    averagePerActiveDay: averageKmPerActiveDay(trips: trips, extras: extras),
     vehicles: reportVehicles,
     vacationPeriods: clippedVacations,
     lines: lines,

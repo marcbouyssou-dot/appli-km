@@ -6,6 +6,8 @@ import '../data/fiscal/fiscal_reference_store.dart';
 import '../data/backup/platform_backup_file_gateway.dart';
 import '../data/ids.dart';
 import '../data/local/app_database.dart';
+import '../data/local/favorite_batch_service.dart';
+import '../data/local/trip_batch_service.dart';
 import '../data/network/osm_route_service.dart';
 import '../data/network/route_distance_service.dart';
 import '../data/local/sembast_day_clear_repository.dart';
@@ -36,6 +38,16 @@ final tripRepositoryProvider = Provider<TripRepository>(
   (ref) => SembastTripRepository(ref.watch(databaseProvider).db),
 );
 
+final tripBatchServiceProvider = Provider<TripBatchService>(
+  (ref) => TripBatchService(
+    ref.watch(databaseProvider).db,
+    newId: ref.watch(idGeneratorProvider).newId,
+  ),
+);
+final favoriteBatchServiceProvider = Provider<FavoriteBatchService>(
+  (ref) => FavoriteBatchService.using(ref.watch(tripBatchServiceProvider)),
+);
+
 final dayExtraRepositoryProvider = Provider<DayExtraRepository>(
   (ref) => SembastDayExtraRepository(ref.watch(databaseProvider).db),
 );
@@ -60,9 +72,7 @@ final settingsRepositoryProvider = Provider<SettingsRepository>(
   (ref) => SembastSettingsRepository(ref.watch(databaseProvider).db),
 );
 
-final idGeneratorProvider = Provider<IdGenerator>(
-  (ref) => const IdGenerator(),
-);
+final idGeneratorProvider = Provider<IdGenerator>((ref) => const IdGenerator());
 
 final backupServiceProvider = Provider<BackupService>(
   (ref) => BackupService(ref.watch(databaseProvider).db),
@@ -104,5 +114,6 @@ class DayDataVersion extends Notifier<int> {
   void bump() => state++;
 }
 
-final dayDataVersionProvider =
-    NotifierProvider<DayDataVersion, int>(DayDataVersion.new);
+final dayDataVersionProvider = NotifierProvider<DayDataVersion, int>(
+  DayDataVersion.new,
+);

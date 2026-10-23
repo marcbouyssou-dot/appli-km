@@ -41,7 +41,7 @@ void main() {
     final totalField =
         tester.widget<TextField>(find.byKey(dayTotalFieldKey));
     expect(totalField.controller!.text, '0');
-    expect(find.text('km aujourd’hui'), findsOneWidget);
+    expect(find.text('aujourd’hui'), findsOneWidget);
   });
 
   testWidgets('les 4 destinations sont présentes', (tester) async {
@@ -75,7 +75,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.today_outlined));
     await tester.pumpAndSettle();
-    expect(find.text('km aujourd’hui'), findsOneWidget);
+    expect(find.text('aujourd’hui'), findsOneWidget);
   });
 
   testWidgets(
@@ -107,7 +107,7 @@ void main() {
 
     await tester.tap(navLabel('Aujourd’hui'));
     await tester.pumpAndSettle();
-    expect(find.text('km aujourd’hui'), findsOneWidget);
+    expect(find.text('aujourd’hui'), findsOneWidget);
   });
 
   testWidgets(
@@ -117,7 +117,7 @@ void main() {
 
     // Au démarrage : Aujourd'hui construit, Calendrier non (pas de travail
     // inutile avant la première interaction).
-    expect(find.text('km aujourd’hui'), findsOneWidget);
+    expect(find.text('aujourd’hui'), findsOneWidget);
     expect(
       find.byKey(const Key('cal-prev'), skipOffstage: false),
       findsNothing,

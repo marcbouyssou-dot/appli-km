@@ -13,6 +13,7 @@ import '../day/day_controller.dart';
 import '../vacations/vacation_guard.dart';
 import '../vehicles/vehicles_controller.dart';
 import 'favorite_form_sheet.dart';
+import 'favorite_days_screen.dart';
 import 'favorites_controller.dart';
 import 'manage_favorites_screen.dart';
 
@@ -47,24 +48,29 @@ class FavoritesSection extends ConsumerWidget {
     // utilisé — on le dit (favori à corriger).
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
-      ..showSnackBar(SnackBar(
-        content: Text(archivedFallback
-            ? '+ ${formatKm(favorite.distanceKm)} — véhicule principal '
-                'utilisé (le véhicule du favori est archivé)'
-            : '+ ${formatKm(favorite.distanceKm)}'),
-        duration: Duration(milliseconds: archivedFallback ? 3500 : 800),
-        behavior: SnackBarBehavior.floating,
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            archivedFallback
+                ? '+ ${formatKm(favorite.distanceKm)} — véhicule principal '
+                      'utilisé (le véhicule du favori est archivé)'
+                : '+ ${formatKm(favorite.distanceKm)}',
+          ),
+          duration: Duration(milliseconds: archivedFallback ? 3500 : 800),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   /// Raccourci « Modifier » : ouvre la gestion globale directement sur la
   /// fiche de CE favori (les favoris sont globaux — la date consultée n'a
   /// aucun effet sur le modèle).
   void _editFavorite(BuildContext context, FavoriteTrip favorite) {
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) =>
-          ManageFavoritesScreen(initialFavoriteId: favorite.id),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ManageFavoritesScreen(initialFavoriteId: favorite.id),
+      ),
+    );
   }
 
   Future<void> _createFavorite(BuildContext context, WidgetRef ref) async {
@@ -76,7 +82,9 @@ class FavoritesSection extends ConsumerWidget {
       routeService: ref.read(routeDistanceServiceProvider),
     );
     if (result == null) return;
-    await ref.read(favoritesControllerProvider.notifier).create(
+    await ref
+        .read(favoritesControllerProvider.notifier)
+        .create(
           label: result.label,
           distanceKm: result.distanceKm,
           defaultRoundTrip: result.defaultRoundTrip,
@@ -118,8 +126,8 @@ class FavoritesSection extends ConsumerWidget {
     // ici était ambigu (il disparaissait de toutes les journées).
     // Signature Mes Km (UX-001B) : la donnée domine — libellé, trajet,
     // et un « +km » très lisible. Pas de carte, des filets fins.
-    // Deux intentions, deux zones nettement séparées (invariant KM-008C) :
-    // toute la ligne = AJOUTER ; « Modifier » = zone distincte explicite.
+    // Trois actions distinctes : ajout immédiat, multi-jours et modification.
+    // Le titre conserve aussi son geste d’ajout quotidien historique.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -128,8 +136,11 @@ class FavoritesSection extends ConsumerWidget {
         Row(
           children: [
             const Expanded(
-              child: SectionHeader('Trajets favoris',
-                  topSpacing: 0, bottomSpacing: 0),
+              child: SectionHeader(
+                'Trajets favoris',
+                topSpacing: 0,
+                bottomSpacing: 0,
+              ),
             ),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 190),
@@ -144,135 +155,113 @@ class FavoritesSection extends ConsumerWidget {
                 style: TextButton.styleFrom(
                   foregroundColor: theme.mesKm.favorite,
                   minimumSize: const Size(0, AppSizes.minTouchTarget),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.s),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s),
                 ),
               ),
             ),
           ],
         ),
         for (final favorite in favorites) ...[
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InkWell(
                   key: Key('favorite-${favorite.id}'),
                   onTap: () => _useFavorite(context, ref, favorite),
                   borderRadius: BorderRadius.circular(AppRadius.s),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
-                      minHeight: AppSizes.minTouchTarget + 8,
+                      minHeight: AppSizes.minTouchTarget,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.s,
-                      ),
-                      child: Row(
-                        children: [
-                          // Repère favori (récurrence = orange chaud) —
-                          // il appartient à la grande zone d'ajout, ce
-                          // n'est pas une cible distincte.
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: theme.mesKm.favoriteContainer,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.s),
-                            ),
-                            child: Icon(
-                              Icons.route_outlined,
-                              size: 19,
-                              color: theme.mesKm.onFavoriteContainer,
-                            ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.mesKm.favoriteContainer,
+                            borderRadius: BorderRadius.circular(AppRadius.s),
                           ),
-                          const SizedBox(width: AppSpacing.m),
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  favorite.label,
-                                  style:
-                                      theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                DefaultTextStyle(
-                                  style: AppTypography.caption.copyWith(
-                                    color:
-                                        theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                  child: _subtitle(favorite) ??
-                                      const SizedBox.shrink(),
-                                ),
-                              ],
-                            ),
+                          child: Icon(
+                            Icons.route_outlined,
+                            size: 19,
+                            color: theme.mesKm.onFavoriteContainer,
                           ),
-                          const SizedBox(width: AppSpacing.s),
-                          // Le « + » : la valeur ajoutée, très lisible,
-                          // sur une teinte d'action légère. UX-007B :
-                          // taille dérivée du thème (titleLarge ≈ 20) et
-                          // FittedBox — la ligne ne peut plus déborder,
-                          // quelle que soit l'échelle de texte.
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.s,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primaryContainer
-                                    .withValues(alpha: 0.45),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  '+${formatKm(favorite.distanceKm)}',
-                                  maxLines: 1,
-                                  style:
-                                      theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: theme.colorScheme.primary,
-                                  ),
+                        ),
+                        const SizedBox(width: AppSpacing.m),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                favorite.label,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            ),
+                              DefaultTextStyle(
+                                style: AppTypography.caption.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                child:
+                                    _subtitle(favorite) ??
+                                    const SizedBox.shrink(),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.s),
-                // UX-007B : largeur bornée + FittedBox — aux très grandes
-                // échelles le libellé se réduit au lieu de pousser la
-                // ligne hors écran. Cible tactile inchangée (>= 48).
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 112),
-                  child: TextButton(
-                    key: Key('edit-favorite-${favorite.id}'),
-                    onPressed: () => _editFavorite(context, favorite),
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.onSurfaceVariant,
-                      minimumSize: const Size(0, AppSizes.minTouchTarget),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.m,
+                Wrap(
+                  spacing: AppSpacing.s,
+                  children: [
+                    TextButton(
+                      key: Key('add-favorite-${favorite.id}'),
+                      onPressed: () => _useFavorite(context, ref, favorite),
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(104, AppSizes.minTouchTarget),
+                        backgroundColor: theme.colorScheme.primaryContainer
+                            .withValues(alpha: 0.45),
+                      ),
+                      child: Text(
+                        '+${formatKm(favorite.distanceKm)}',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                     ),
-                    child: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Modifier', maxLines: 1),
+                    TextButton.icon(
+                      key: Key('multi-day-favorite-${favorite.id}'),
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(0, AppSizes.minTouchTarget),
+                      ),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              FavoriteDaysScreen(favorite: favorite),
+                        ),
+                      ),
+                      icon: const Icon(Icons.date_range_outlined, size: 18),
+                      label: const Text('Autres jours'),
                     ),
-                  ),
+                    TextButton(
+                      key: Key('edit-favorite-${favorite.id}'),
+                      onPressed: () => _editFavorite(context, favorite),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.colorScheme.onSurfaceVariant,
+                        minimumSize: const Size(0, AppSizes.minTouchTarget),
+                      ),
+                      child: const Text('Modifier'),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           Divider(height: 1, color: theme.colorScheme.outlineVariant),
         ],
@@ -285,9 +274,7 @@ class FavoritesSection extends ConsumerWidget {
     final parts = [
       formatKm(favorite.distanceKm),
       if (favorite.defaultRoundTrip) 'A/R',
-      [favorite.origin, favorite.destination]
-          .whereType<String>()
-          .join(' → '),
+      [favorite.origin, favorite.destination].whereType<String>().join(' → '),
     ].where((part) => part.isNotEmpty).join(' · ');
     return Text(parts);
   }
